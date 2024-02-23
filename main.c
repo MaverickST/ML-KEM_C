@@ -9,7 +9,7 @@
 int main(){
     // Print Hello, World 10 times
     for (int i = 0; i < 10; i++){
-        printf("Hello, World Mor!\n");
+        printf("Hello World Mor!\n");
     }
 
     printf("That's all folks!\n");
