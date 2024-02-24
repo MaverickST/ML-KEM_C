@@ -6,5 +6,6 @@
 #include <string.h>
 
 unsigned char* convertBitsToBytes(const char* bitString);
+unsigned char* convertBytesToBits(const unsigned char* bytesArray);
 
 #endif

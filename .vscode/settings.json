@@ -1,7 +1,10 @@
 {
     "files.associations": {
+        "*.vhd": "shellscript",
         "funtions.h": "c",
         "cstddef": "c",
-        "functions.h": "c"
+        "functions.h": "c",
+        "string_view": "c",
+        "stdlib.h": "c"
     }
 }
