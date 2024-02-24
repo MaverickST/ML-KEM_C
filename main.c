@@ -35,7 +35,6 @@ int main() {
 
     // Free the allocated memory
     free(bytesArrayLittleEndian);
-    free(bitStringLittleEndian);
 
     return 0;
 }
