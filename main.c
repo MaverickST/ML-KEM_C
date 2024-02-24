@@ -3,16 +3,29 @@
 \author Cristian David Araujo Araujo, Maverick Sossa Tobon
 */
 
-// Libraries
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-int main(){
-    // Print Hello, World 10 times
-    for (int i = 0; i < 10; i++){
-        printf("Hello World Mor!\n");
+#include "functions.h"
+
+int main() {
+    const char* bitString = "0100100001100101011011000110110001101111";  // "Hello" in ASCII binary
+    size_t length = strlen(bitString);
+
+    // Convert the bit string to bytes in little-endian format
+    unsigned char* bytesArrayLittleEndian = convertBitsToBytes(bitString);
+
+    // Print the bytes in little-endian format
+    printf("Bytes (Little Endian): ");
+    for (size_t i = 0; i < length / 8; i++) {
+        printf("%d ", bytesArrayLittleEndian[i]);
     }
+    printf("\n");
 
-    printf("That's all folks!\n");
+    // Free the allocated memory
+    free(bytesArrayLittleEndian);
 
     return 0;
 }
+
