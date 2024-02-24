@@ -25,7 +25,5 @@ int main() {
 
     // Free the allocated memory
     free(bytesArrayLittleEndian);
-
-    return 0;
 }
 
