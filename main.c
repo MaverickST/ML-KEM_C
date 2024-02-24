@@ -16,7 +16,7 @@ int main() {
     printf("Original bits: %s\n", bitString);
 
     // Convert the bit string to bytes in little-endian format
-    unsigned char* bytesArrayLittleEndian = convertBitsToBytes(bitString);
+    unsigned char* bytesArrayLittleEndian = BitsToBytes(bitString);
 
     // Print the bytes in little-endian format
     printf("Bytes (Little Endian): ");
@@ -27,7 +27,7 @@ int main() {
 
     // Convert the bytes back to bits
     printf("Bits (Little Endian): ");
-    unsigned char* bitStringLittleEndian = convertBytesToBits(bytesArrayLittleEndian);
+    unsigned char* bitStringLittleEndian = BytesToBits(bytesArrayLittleEndian);
     for (size_t i = 0; i < length; i++) {
         printf("%c", bitStringLittleEndian[i] + '0'); // Convert the numeric value to its character representation ('0' or '1')
     }

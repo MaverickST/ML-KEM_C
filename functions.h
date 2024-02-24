@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-unsigned char* convertBitsToBytes(const char* bitString);
-unsigned char* convertBytesToBits(const unsigned char* bytesArray);
+unsigned char* BitsToBytes(const char* bitString);
+unsigned char* BytesToBits(const unsigned char* bytesArray);
 
 #endif

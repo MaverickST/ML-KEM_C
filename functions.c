@@ -1,7 +1,7 @@
 #include "functions.h"
 
 
-unsigned char* convertBitsToBytes(const char* bitString) {
+unsigned char* BitsToBytes(const char* bitString) {
     //Converts a bit string (of length a multiple of eight) into an array of bytes.
 
     // Calculates the length of the bit string
@@ -26,7 +26,7 @@ unsigned char* convertBitsToBytes(const char* bitString) {
     return bytesArray;
 }
 
-unsigned char* convertBytesToBits(const unsigned char* bytesArray) {
+unsigned char* BytesToBits(const unsigned char* bytesArray) {
     //Converts an array of bytes into a bit string (of length a multiple of eight).
 
     //Calculate the length of the byte array
@@ -53,4 +53,12 @@ unsigned char* convertBytesToBits(const unsigned char* bytesArray) {
     }
 
     return bitString;
+}
+
+unsigned char* byteEncode() {
+    // ByteEncoded serializes an array of d-bit integers into an array of 32d bytes.
+    //Encodes an array of d-bit integers into a byte array of 32d, for 1 ≤ d ≤ 12
+
+
+
 }
