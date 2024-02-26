@@ -10,13 +10,13 @@
 #include "functions.h"
 
 int main() {
-    const char* bitString = "0100100001100101011011000110110001101111";  // "Hello" in ASCII binary
-    size_t length = strlen(bitString);
+    unsigned char* bitArray = "0100100001100101011011000110110001101111";  // "Hello" in ASCII binary
+    size_t length = strlen(bitArray);
 
-    printf("Original bits: %s\n", bitString);
+    printf("Original bits: %s\n", bitArray);
 
     // Convert the bit string to bytes in little-endian format
-    unsigned char* bytesArrayLittleEndian = BitsToBytes(bitString);
+    unsigned char* bytesArrayLittleEndian = BitsToBytes(bitArray);
 
     // Print the bytes in little-endian format
     printf("Bytes (Little Endian): ");
@@ -35,7 +35,7 @@ int main() {
 
     // Free the allocated memory
     free(bytesArrayLittleEndian);
-
+    free(bitStringLittleEndian);
     return 0;
 }
 
