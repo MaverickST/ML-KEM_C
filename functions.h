@@ -7,5 +7,6 @@
 
 unsigned char* BitsToBytes(unsigned char* bitArray);
 unsigned char* BytesToBits(unsigned char* bytesArray);
+unsigned char* byteEncode(__uint16_t F[], __uint8_t d);
 
 #endif
