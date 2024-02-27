@@ -12,7 +12,7 @@
 int main() {
     const char* bitString = "0100100001100101011011000110110001101111";  // "Hello" in ASCII binary
     size_t length = strlen(bitString);
-
+    
     // Convert the bit string to bytes in little-endian format
     unsigned char* bytesArrayLittleEndian = convertBitsToBytes(bitString);
 
@@ -23,6 +23,7 @@ int main() {
     }
     printf("\n");
 
+    // Convert the bytes in little-endian format to bit string
     // Free the allocated memory
     free(bytesArrayLittleEndian);
 }
