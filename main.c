@@ -37,12 +37,16 @@ int main() {
     free(bytesArrayLittleEndian);
     free(bitStringLittleEndian);
 
+
+// ------------------------------------------------------------------------------------
+
     // Define and initialize an array of 256 __uint16_t elements
     __uint16_t F[256];
     for (int i = 0; i < 256; i++) {
         F[i] = (__uint16_t)i;
     }
 
+    // Define and initialize an array of 256 __uint16_t elements
     // Define the value of d
     __uint8_t d = 8; // Note: d should be in the range 1 ≤ d ≤ 12
 
@@ -61,8 +65,8 @@ int main() {
     }
     printf("\n");
 
-    // Free the dynamically allocated memory
     free(byteArray);
+
 
     return 0;
 }

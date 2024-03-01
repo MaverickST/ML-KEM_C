@@ -88,3 +88,32 @@ unsigned char* byteEncode(__uint16_t F[], __uint8_t d) {
 
     return byteArray;
 }
+
+
+__uint16_t* byteDecode(unsigned char* byteArray, __uint8_t d){
+    // Decodes an array of 32d bytes into an array of d-bit integers.
+    //Decodes an array of 32d bytes into an array of d-bit integers.
+
+    unsigned char* bitString = BytesToBits(byteArray);
+
+    // Create an array of bits
+    __uint16_t numBytes = 256;
+    __uint16_t* intArrayF = (__uint16_t*)calloc(numBytes, sizeof(__uint16_t));
+
+    if (intArrayF == NULL) {
+        fprintf(stderr, "Memory allocation error - byteDncode\n");
+        return NULL;
+    }
+    // Iterate over the bytes
+    for(__uint8_t i = 0; i < 256; i++) {
+        for (__uint8_t j = 0; j < d; j++) {
+            intArrayF[i] += (bitString[i * d + j] - '0')<<j;
+        }
+        intArrayF[i] = intArrayF[i]%d;
+    }
+
+    // Free the allocated memory
+    free(bitString);
+
+    return intArrayF;
+}
