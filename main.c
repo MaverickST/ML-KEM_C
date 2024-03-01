@@ -52,7 +52,6 @@ int main() {
 
     // Call the byteEncode function
     unsigned char* byteArray = byteEncode(F, d);
-
     if (byteArray == NULL) {
         fprintf(stderr, "Error: byteEncode returned NULL.\n");
         return 1; // Exit with an error status
@@ -65,6 +64,22 @@ int main() {
     }
     printf("\n");
 
+    
+    __uint16_t* intArray = byteDecode(byteArray, d);
+    if (intArray == NULL) {
+        fprintf(stderr, "Error: byteDecode returned NULL.\n");
+        return 1; // Exit with an error status
+    }
+
+    // Print intArray
+    printf("Result of byteDecode:\n");
+    for (int i = 0; i < 256; i++) {
+        printf("%d ", intArray[i]);
+    }
+    printf("\n");
+
+    // Free the allocated memory
+    free(intArray);
     free(byteArray);
 
 
