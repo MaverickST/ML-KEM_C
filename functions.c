@@ -105,11 +105,16 @@ __uint16_t* byteDecode(unsigned char* byteArray, __uint8_t d){
         return NULL;
     }
     // Iterate over the bytes
-    for(__uint8_t i = 0; i < 256; i++) {
-        for (__uint8_t j = 0; j < d; j++) {
-            intArrayF[i] += (bitString[i * d + j] - '0')<<j;
+    for(int i = 0; i < 256; i++) {
+        for (int j = 0; j < d; j++) {
+            intArrayF[i] += (bitString[i * d + j] - '0')<<j;// sum up the bits
         }
-        intArrayF[i] = intArrayF[i]%d;
+        if (d < 12){
+            intArrayF[i] = intArrayF[i]%(1 << d);// truncate to d bits (mod 2^d)
+        }else {
+            intArrayF[i] = intArrayF[i]%(1 << 3329);// truncate to 3329 bits (mod q)
+        }
+        
     }
 
     // Free the allocated memory
