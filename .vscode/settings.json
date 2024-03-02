@@ -6,6 +6,8 @@
         "functions.h": "c",
         "string_view": "c",
         "stdlib.h": "c",
-        "random": "c"
+        "random": "c",
+        "stdio.h": "c",
+        "string.h": "c"
     }
 }
