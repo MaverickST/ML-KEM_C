@@ -17,6 +17,6 @@ __uint32_t* bytesToBits(__uint8_t* bytesArray, __uint16_t numBytes);
 __uint16_t rounding(struct rational num);
 __uint16_t compress(__uint16_t numMod_d, __uint8_t d);
 __uint16_t decompress(__uint16_t numMod_2d, __uint8_t d);
-unsigned char* byteEncode(__uint16_t F[], __uint8_t d);
+__uint8_t* byteEncode(__uint16_t F[], __uint16_t d);
 
 #endif

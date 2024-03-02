@@ -11,6 +11,8 @@
 int main() {
     
     runTestsConvertions();
+    runTestCompress();
+    runTestsEncode();
 
     return 0;
 }

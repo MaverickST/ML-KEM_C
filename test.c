@@ -52,3 +52,48 @@ void runTestsConvertions(){
     free(byteArray);
     free(reconstructedBitArray);
 }
+
+void runTestCompress(){
+    // Test case values
+    __uint16_t numMod_d = 16; // Example value for numMod_d, you can change it as needed
+    __uint8_t d = 11; // Example value for d, you can change it as needed
+
+    // Test rounding function
+    struct rational numRounding = {numMod_d, 2001};
+    __uint16_t roundedValue = rounding(numRounding);
+    printf("Rounding result: %u\n", roundedValue);
+
+    // Test compress function
+    __uint16_t compressedValue = compress(numMod_d, d);
+
+    // Test decompress function
+    __uint16_t decompressedValue = decompress(compressedValue, d);
+
+    printf("Result of Compress and Decompress for d=%u and numMod_d=%u\n", d, numMod_d);
+    printf("Compress result: %u\n", compressedValue);
+    printf("Decompress result: %u\n", decompressedValue);
+    printf("\n");
+}
+
+void runTestsEncode(){
+    // Create a test array of 256 elements
+    __uint16_t F[256];
+    for (int i = 0; i < 256; i++) {
+        F[i] = i;  // Or any other test values you desire
+    }
+
+    // Call byteEncode with a specific value of d
+    __uint16_t d = 8;  // Change this value as needed
+    __uint8_t* byteArray = byteEncode(F, d);
+
+    // Print the result (the array of bytes)
+    printf("Result of byteEncode for d=%u:\n", d);
+    for (int i = 0; i < 256 * d / 8; i++) {
+        printf("%u ", byteArray[i]);
+    }
+    printf("\n");
+
+    // Free allocated memory
+    free(byteArray);
+
+}
