@@ -10,8 +10,8 @@
 
 int main() {
   
-    runTestsConvertions();
-  
+    runTestsConvertions(); 
+
     return 0;
 }
 
