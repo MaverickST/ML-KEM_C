@@ -143,3 +143,33 @@ __uint16_t* byteDecode(unsigned char* byteArray, __uint8_t d){
 
     return intArrayF;
 }
+
+
+__uint16_t reduceBarrett(__uint32_t aMul) {
+    // Implement the Barrett reduction algorithm to do a multiplication between 12-bit integers.
+    __uint32_t t = ((__uint64_t)aMul*(__uint64_t)r_BARRETT) >> (2*k_BARRETT); // Generate a 13-bit integer
+    t = aMul - t*3329;
+    return conditionalReduce((__uint16_t)t);
+}
+__uint16_t conditionalReduce(__uint16_t a){
+    // Implement condition reduction to avoid overflow.
+    a -= 3329;
+    if (a & (1<<15)) { // If the most significant bit is 1 it means it overflowed
+        a += 3329;
+    }
+    return a;
+}
+__uint16_t addModq(__uint16_t a, __uint16_t b){
+    a += b;
+    a = conditionalReduce(a);
+    return a;
+}
+__uint16_t subModq(__uint16_t a, __uint16_t b){
+    a = a - b + 3329;
+    a = conditionalReduce(a);
+    return a;
+}
+__uint16_t mulModq(__uint16_t a, __uint16_t b){
+    __uint32_t mulResult = (__uint32_t)a*(__uint32_t)b;
+    return reduceBarrett(mulResult);
+}
