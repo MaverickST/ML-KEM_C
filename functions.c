@@ -13,6 +13,15 @@ void printArrayChar(unsigned char* array, __uint32_t size){
     }
     printf("\n");
 }
+__uint8_t bitRev7(__uint8_t i){
+    // Reverse input 7-bits
+    __uint8_t res = 0;
+    for(int j = 6; j >= 0; j--){
+        res |= (i & 1) << j;
+        i >>= 1;
+    }
+    return res;
+}
 
 unsigned char* BitsToBytes(unsigned char* bitArray) {
     //Converts a bit string (of length a multiple of eight) into an array of bytes.
