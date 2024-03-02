@@ -18,5 +18,9 @@ __uint16_t rounding(struct rational num);
 __uint16_t compress(__uint16_t numMod_d, __uint8_t d);
 __uint16_t decompress(__uint16_t numMod_2d, __uint8_t d);
 unsigned char* byteEncode(__uint16_t F[], __uint8_t d);
+__uint16_t* byteDecode(unsigned char* byteArray, __uint8_t d);
+
+void printArrayInt(__uint16_t* array, __uint32_t size);
+void printArrayChar(unsigned char* array, __uint32_t size);
 
 #endif

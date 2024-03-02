@@ -2,7 +2,7 @@
 
 __uint8_t* bitsToBytes(__uint32_t* bitArray, __uint16_t numBits) {
     //Converts a bit array (of length a multiple of eight) into an array of bytes.
-
+  
     // Calculates the number of bytes required
     __uint32_t numBytes = numBits/8;
 
@@ -121,6 +121,7 @@ __uint16_t decompress(__uint16_t numMod_2d, __uint8_t d) {
 //         }
 //     }
 
+
 //     unsigned char* byteArray = BitsToBytes(bitArray);
 
 //     // Free the allocated memory
@@ -128,3 +129,4 @@ __uint16_t decompress(__uint16_t numMod_2d, __uint8_t d) {
 
 //     return byteArray;
 // }
+

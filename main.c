@@ -9,9 +9,9 @@
 #include "test.h"
 
 int main() {
-    
+  
     runTestsConvertions();
-
+  
     return 0;
 }
 
