@@ -1,6 +1,19 @@
 #include "functions.h"
 
 
+void printArrayInt(__uint16_t* array, __uint32_t size){
+    for(int i = 0; i < size; i++){
+        printf("%d ", array[i]);
+    }
+    printf("\n");
+}
+void printArrayChar(unsigned char* array, __uint32_t size){
+    for(int i = 0; i < size; i++){
+        printf("%d ", array[i]);
+    }
+    printf("\n");
+}
+
 unsigned char* BitsToBytes(unsigned char* bitArray) {
     //Converts a bit string (of length a multiple of eight) into an array of bytes.
 
@@ -71,7 +84,6 @@ unsigned char* byteEncode(__uint16_t F[], __uint8_t d) {
         return NULL;
     }
 
-
     for (int i = 0; i < 256; i++) {
         __uint8_t a = F[i];
         for (int j = 0; j < d; j++) {
@@ -112,7 +124,7 @@ __uint16_t* byteDecode(unsigned char* byteArray, __uint8_t d){
         if (d < 12){
             intArrayF[i] = intArrayF[i]%(1 << d);// truncate to d bits (mod 2^d)
         }else {
-            intArrayF[i] = intArrayF[i]%(1 << 3329);// truncate to 3329 bits (mod q)
+            intArrayF[i] = intArrayF[i]%(3329);// truncate to 3329 bits (mod q)
         }
         
     }
