@@ -8,22 +8,10 @@
 
 int main() {
 
-    __uint16_t* intArray = runTestByteDecode(8);
-    printf("Poly f: \n");
-    for (int i = 0; i < 256; i++) {
-        printf("%d ", intArray[i]);
-    }
-    printf("\n");
+    // runTest_NTT_inverseNTT();
 
-    __uint16_t* polyNTT = polyF2polyNTT(intArray);
-    printf("PolyNTT: \n");
-    for (int i = 0; i < 256; i++) {
-        printf("%d ", polyNTT[i]);
-    }
-    printf("\n");
-
-    free(intArray);
-    free(polyNTT);
+    // __uint16_t i = 97;
+    // printf("i = %d\n", bitRev7(i));
 
     return 0;
 }

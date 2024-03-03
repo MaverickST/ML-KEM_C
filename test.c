@@ -53,7 +53,7 @@ void runTestsConvertions(){
     free(reconstructedBitArray);
 }
 
-__uint16_t* runTestByteDecode(__uint8_t d){
+void runTestByteDecode(__uint8_t d){
     // Make a random test to byteDecode function
     // Generate 32*d random byte, then use byteDecode function to convert to integer mod q (or mod 2^d if d<12)
 
@@ -70,9 +70,48 @@ __uint16_t* runTestByteDecode(__uint8_t d){
     
     // Test the function byteDecode
     __uint16_t* intArray = byteDecode(byteArray, d);
+    printPoly(intArray);
 
+    free(intArray);
     free(byteArray);
 
-    return intArray;
+}
 
+void runTest_NTT_inverseNTT(){
+
+    __uint16_t* intArray = generateRandomPoly();
+    printf("Int array: \n");
+    printPoly(intArray);
+
+    __uint16_t* polyNTT = polyF2polyNTT(intArray);
+    printf("PolyNTT: \n");
+    printPoly(polyNTT);
+
+    __uint16_t* polyF = polyNTT2polyF(polyNTT);
+    printf("PolyF: \n");
+    printPoly(polyF);
+
+
+    free(intArray);
+    free(polyNTT);
+    free(polyF);
+}
+
+__uint16_t* generateRandomPoly(){
+
+    srand(time(NULL)); // use current time as seed for random generator
+    
+    // Generate 256 random integers mod q
+    __uint16_t* poly = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+    for (int i = 0; i < 256; i++) {
+        poly[i] = rand()/((RAND_MAX + 1u)/(Q));
+    }
+    return poly;
+}
+
+void printPoly(__uint16_t* poly){
+    for (int i = 0; i < 256; i++) {
+        printf("%d ", poly[i]);
+    }
+    printf("\n");
 }

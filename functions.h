@@ -33,6 +33,9 @@ __uint16_t* byteDecode(__uint8_t* byteArray, __uint8_t d);
 
 // Algorithm 8: NTT
 __uint16_t* polyF2polyNTT(__uint16_t* polyF);
+// Algorithm 9: Inverse NTT
+__uint16_t* polyNTT2polyF(__uint16_t* polyNTT);
+
 
 __uint8_t bitRev7(__uint8_t i);
 // Modular arithmetic functions
