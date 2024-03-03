@@ -53,7 +53,7 @@ void runTestsConvertions(){
     free(reconstructedBitArray);
 }
 
-void runTestByteDecode(__uint8_t d){
+__uint16_t* runTestByteDecode(__uint8_t d){
     // Make a random test to byteDecode function
     // Generate 32*d random byte, then use byteDecode function to convert to integer mod q (or mod 2^d if d<12)
 
@@ -70,14 +70,9 @@ void runTestByteDecode(__uint8_t d){
     
     // Test the function byteDecode
     __uint16_t* intArray = byteDecode(byteArray, d);
-    // Print intArray
-    printf("Decoded bytes: \n");
-    for (int i = 0; i < 256; i++) {
-        printf("%d ", intArray[i]);
-    }
-    printf("\n");
 
-    free(intArray);
     free(byteArray);
+
+    return intArray;
 
 }

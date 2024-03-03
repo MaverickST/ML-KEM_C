@@ -1,5 +1,15 @@
 #include "functions.h"
 
+// Array that provide directly: zeta^(bitRev7(i)) mod q
+int zetaArray[128]  = {1, 1729, 2580, 3289, 2642, 630, 1897, 848, 1062, 1919, 193, 797, 
+2786, 3260, 569, 1746, 296, 2447, 1339, 1476, 3046, 56, 2240, 1333, 1426, 2094, 535, 2882, 2393, 
+2879, 1974, 821, 289, 331, 3253, 1756, 1197, 2304, 2277, 2055, 650, 1977, 2513, 632, 2865, 33, 
+1320, 1915, 2319, 1435, 807, 452, 1438, 2868, 1534, 2402, 2647, 2617, 1481, 648, 2474, 3116, 1227, 
+910, 17, 2761, 583, 2649, 1637, 723, 2288, 1100, 1489, 2662, 3281, 233, 756, 2156, 3015, 3050, 1703, 
+1651, 2789, 1789, 1847, 952, 1461, 2687, 939, 2308, 2437, 2388, 733, 2337, 268, 641, 1584, 2298, 
+2037, 3220, 375, 2549, 2090, 1645, 1063, 319, 2773, 757, 2099, 561, 2466, 2594, 2804, 1092, 403, 1026, 
+1143, 2150, 2775, 886, 1722, 1212, 1874, 1029, 2110, 2935, 885, 2154};
+
 __uint8_t bitRev7(__uint8_t i){
     // Reverse input 7-bits
     __uint8_t res = 0;
@@ -141,8 +151,7 @@ __uint16_t decompress(__uint16_t numMod_2d, __uint8_t d) {
 // }
 
 __uint16_t* byteDecode(__uint8_t* byteArray, __uint8_t d){
-    // Decodes an array of 32d bytes into an array of d-bit integers.
-    //Decodes an array of 32d bytes into an array of d-bit integers.
+    // Decodes an array of 32d bytes into an array of 256 d-bit integers mod q (if d<12, else mod 2^d).
 
     __uint32_t* bitArray = bytesToBits(byteArray, 32*d);
 
@@ -170,6 +179,31 @@ __uint16_t* byteDecode(__uint8_t* byteArray, __uint8_t d){
     free(bitArray);
 
     return intArrayF;
+}
+
+__uint16_t* polyF2polyNTT(__uint16_t* polyF){
+
+    __uint16_t* polyNTT = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+    // Copy each element of polyF into polyNTT
+    for (int i = 0; i < 256; i++) {
+        polyNTT[i] = polyF[i];
+    }
+
+    __uint16_t zeta, t;
+    int k = 1;
+    for (int len = 128; len >= 2; len = len/2){
+        for (int start = 0; start < 256; start = start + 2*len){
+            zeta = zetaArray[k];
+            k += 1;
+            for (int j = start; j < start + len; j++){
+                t = mulModq(zeta, polyNTT[j + len]);
+                polyNTT[j + len] = subModq(polyNTT[j], t);
+                polyNTT[j] = addModq(polyNTT[j], t);
+            }
+        }
+    }
+    
+    return polyNTT;
 }
 
 __uint16_t reduceBarrett(__uint32_t aMul) {
