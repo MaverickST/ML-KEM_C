@@ -3,8 +3,6 @@
 \autho Cristian David Araujo Araujo, Maverick Sossa Tobon
 */
 
-
-
 #include "functions.h"
 #include "test.h"
 
