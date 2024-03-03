@@ -9,5 +9,6 @@
 void printBitArray(__uint32_t* bitArray, __uint16_t numBits);
 void printByteArray(__uint8_t* byteArray, __uint16_t numBytes);
 void runTestsConvertions();
+void runTestByteDecode(__uint8_t d);
 
 #endif // TEST_H

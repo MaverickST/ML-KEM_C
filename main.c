@@ -9,8 +9,9 @@
 #include "test.h"
 
 int main() {
-  
-    runTestsConvertions(); 
+    
+    __uint8_t d = 8;
+    runTestByteDecode(d);
 
     return 0;
 }
