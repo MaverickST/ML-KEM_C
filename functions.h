@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 
 #define k_BARRETT 12     // k = log2(q)
@@ -35,7 +36,11 @@ __uint16_t* byteDecode(__uint8_t* byteArray, __uint8_t d);
 __uint16_t* polyF2polyNTT(__uint16_t* polyF);
 // Algorithm 9: Inverse NTT
 __uint16_t* polyNTT2polyF(__uint16_t* polyNTT);
-
+// Algorithm 10: Multiply NTT
+__uint16_t* multiplyNTT(__uint16_t* polyNTT1, __uint16_t* polyNTT2);
+// Algorithm 11: Base case multiply
+__uint16_t baseCaseMultiplyC0(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1, __uint16_t gamma);
+__uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1);
 
 __uint8_t bitRev7(__uint8_t i);
 // Modular arithmetic functions
