@@ -1,18 +1,5 @@
 #include "functions.h"
 
-
-void printArrayInt(__uint16_t* array, __uint32_t size){
-    for(int i = 0; i < size; i++){
-        printf("%d ", array[i]);
-    }
-    printf("\n");
-}
-void printArrayChar(unsigned char* array, __uint32_t size){
-    for(int i = 0; i < size; i++){
-        printf("%d ", array[i]);
-    }
-    printf("\n");
-}
 __uint8_t bitRev7(__uint8_t i){
     // Reverse input 7-bits
     __uint8_t res = 0;
@@ -153,16 +140,14 @@ __uint16_t decompress(__uint16_t numMod_2d, __uint8_t d) {
 //     return byteArray;
 // }
 
-__uint16_t* byteDecode(unsigned char* byteArray, __uint8_t d){
+__uint16_t* byteDecode(__uint8_t* byteArray, __uint8_t d){
     // Decodes an array of 32d bytes into an array of d-bit integers.
     //Decodes an array of 32d bytes into an array of d-bit integers.
 
-    unsigned char* bitString = BytesToBits(byteArray);
+    __uint32_t* bitArray = bytesToBits(byteArray, 32*d);
 
-    // Create an array of bits
-    __uint16_t numBytes = 256;
-    __uint16_t* intArrayF = (__uint16_t*)calloc(numBytes, sizeof(__uint16_t));
-
+    // Create an array of integers
+    __uint16_t* intArrayF = (__uint16_t*)calloc(256, sizeof(__uint16_t));
     if (intArrayF == NULL) {
         fprintf(stderr, "Memory allocation error - byteDncode\n");
         return NULL;
@@ -170,18 +155,19 @@ __uint16_t* byteDecode(unsigned char* byteArray, __uint8_t d){
     // Iterate over the bytes
     for(int i = 0; i < 256; i++) {
         for (int j = 0; j < d; j++) {
-            intArrayF[i] += (bitString[i * d + j] - '0')<<j;// sum up the bits
+            intArrayF[i] += ((bitArray[(i * d + j)>>5] >> ((i * d + j)%32))&1)<<j;// sum up the bits
+            //               | index a 32-bit segment |    |    get the bit   | 
         }
         if (d < 12){
             intArrayF[i] = intArrayF[i]%(1 << d);// truncate to d bits (mod 2^d)
         }else {
-            intArrayF[i] = intArrayF[i]%(3329);// truncate to 3329 bits (mod q)
+            intArrayF[i] = intArrayF[i]%(Q);// truncate to 3329 bits (mod q)
         }
         
     }
 
     // Free the allocated memory
-    free(bitString);
+    free(bitArray);
 
     return intArrayF;
 }
@@ -189,14 +175,14 @@ __uint16_t* byteDecode(unsigned char* byteArray, __uint8_t d){
 __uint16_t reduceBarrett(__uint32_t aMul) {
     // Implement the Barrett reduction algorithm to do a multiplication between 12-bit integers.
     __uint32_t t = ((__uint64_t)aMul*(__uint64_t)r_BARRETT) >> (2*k_BARRETT); // Generate a 13-bit integer
-    t = aMul - t*3329;
+    t = aMul - t*Q;
     return conditionalReduce((__uint16_t)t);
 }
 __uint16_t conditionalReduce(__uint16_t a){
     // Implement condition reduction to avoid overflow.
-    a -= 3329;
+    a -= Q;
     if (a & (1<<15)) { // If the most significant bit is 1 it means it overflowed
-        a += 3329;
+        a += Q;
     }
     return a;
 }
@@ -206,7 +192,7 @@ __uint16_t addModq(__uint16_t a, __uint16_t b){
     return a;
 }
 __uint16_t subModq(__uint16_t a, __uint16_t b){
-    a = a - b + 3329;
+    a = a - b + Q;
     a = conditionalReduce(a);
     return a;
 }

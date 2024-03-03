@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 
 #define k_BARRETT 12     // k = log2(q)
@@ -23,12 +24,8 @@ __uint16_t compress(__uint16_t numMod_d, __uint8_t d);
 __uint16_t decompress(__uint16_t numMod_2d, __uint8_t d);
 
 unsigned char* byteEncode(__uint16_t F[], __uint8_t d);
-__uint16_t* byteDecode(unsigned char* byteArray, __uint8_t d);
-
-void printArrayInt(__uint16_t* array, __uint32_t size);
-void printArrayChar(unsigned char* array, __uint32_t size);
+__uint16_t* byteDecode(__uint8_t* byteArray, __uint8_t d);
 __uint8_t bitRev7(__uint8_t i);
-
 
 // Modular arithmetic functions
 __uint16_t conditionalReduce(__uint16_t a);
