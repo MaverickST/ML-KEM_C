@@ -3,15 +3,15 @@
 \autho Cristian David Araujo Araujo, Maverick Sossa Tobon
 */
 
-
-
 #include "functions.h"
 #include "test.h"
 
 int main() {
-    
-    __uint8_t d = 8;
-    runTestByteDecode(d);
+
+    // runTest_NTT_inverseNTT();
+
+    // __uint16_t i = 97;
+    // printf("i = %d\n", bitRev7(i));
 
     return 0;
 }

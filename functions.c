@@ -1,12 +1,18 @@
 #include "functions.h"
+#include "arrays.h"
 
 __uint8_t bitRev7(__uint8_t i){
+
+    printf("Zeta [%d]: %d\n", i, zetaArray[i]);
+    printf("Gamma [%d]: %d\n", i, gammaArray[i]);
+
     // Reverse input 7-bits
     __uint8_t res = 0;
     for(int j = 6; j >= 0; j--){
         res |= (i & 1) << j;
         i >>= 1;
     }
+
     return res;
 }
 
@@ -141,8 +147,7 @@ __uint16_t decompress(__uint16_t numMod_2d, __uint8_t d) {
 // }
 
 __uint16_t* byteDecode(__uint8_t* byteArray, __uint8_t d){
-    // Decodes an array of 32d bytes into an array of d-bit integers.
-    //Decodes an array of 32d bytes into an array of d-bit integers.
+    // Decodes an array of 32d bytes into an array of 256 d-bit integers mod q (if d<12, else mod 2^d).
 
     __uint32_t* bitArray = bytesToBits(byteArray, 32*d);
 
@@ -159,7 +164,7 @@ __uint16_t* byteDecode(__uint8_t* byteArray, __uint8_t d){
             //               | index a 32-bit segment |    |    get the bit   | 
         }
         if (d < 12){
-            intArrayF[i] = intArrayF[i]%(1 << d);// truncate to d bits (mod 2^d)
+            intArrayF[i] = intArrayF[i]%(1 << d);// truncate to d-bits (mod 2^d)
         }else {
             intArrayF[i] = intArrayF[i]%(Q);// truncate to 3329 bits (mod q)
         }
@@ -170,6 +175,65 @@ __uint16_t* byteDecode(__uint8_t* byteArray, __uint8_t d){
     free(bitArray);
 
     return intArrayF;
+}
+
+__uint16_t* polyF2polyNTT(__uint16_t* polyF){
+    // Computes the NTT representation f_ˆ of the given polynomial f ∈ Rq.
+
+    __uint16_t* polyNTT = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+    if (polyNTT == NULL) {
+        fprintf(stderr, "Memory allocation error - polyF2polyNTT\n");
+        return NULL;
+    }
+    // Copy each element of polyF into polyNTT
+    for (int i = 0; i < 256; i++) {
+        polyNTT[i] = polyF[i];
+    }
+
+    __uint16_t zeta, t;
+    int k = 1;
+    for (int len = 128; len >= 2; len = len/2){
+        for (int start = 0; start < 256; start = start + 2*len){
+            zeta = zetaArray[k];
+            k += 1;
+            for (int j = start; j < start + len; j++){
+                t = mulModq(zeta, polyNTT[j + len]);
+                polyNTT[j + len] = subModq(polyNTT[j], t);
+                polyNTT[j] = addModq(polyNTT[j], t);
+            }
+        }
+    }
+    
+    return polyNTT;
+}
+__uint16_t* polyNTT2polyF(__uint16_t* polyNTT) {
+    // Computes the polynomial f ∈ Rq corresponding to the given NTT representation f_ˆ ∈ Tq.
+
+    __uint16_t* polyF = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+    if (polyF == NULL) {
+        fprintf(stderr, "Memory allocation error - polyNTT2polyF\n");
+        return NULL;
+    }
+    // Copy each element of polyNTT into polyF
+    for (int i = 0; i < 256; i++) {
+        polyF[i] = polyNTT[i];
+    }
+
+    __uint16_t zeta, t;
+    int k = 127;
+    for (int len = 2; len <= 128; len = 2*len){
+        for (int start = 0; start < 256; start = start + 2*len){
+            zeta = zetaArray[k];
+            k -= 1;
+            for (int j = start; j < start + len; j++){
+                t = polyF[j];
+                polyF[j] = addModq(t, polyF[j + len]);
+                polyF[j + len] = mulModq(zeta, subModq(polyF[j + len], t));
+            }
+        }
+    }
+
+    return polyF;
 }
 
 __uint16_t reduceBarrett(__uint32_t aMul) {
