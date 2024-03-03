@@ -12,6 +12,7 @@ void printPoly(__uint16_t* poly);
 void runTestsConvertions();
 void runTestByteDecode(__uint8_t d);
 void runTest_NTT_inverseNTT();
+void runTestMultiplyNTT();
 __uint16_t* generateRandomPoly();
 
 #endif // TEST_H

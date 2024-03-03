@@ -236,6 +236,37 @@ __uint16_t* polyNTT2polyF(__uint16_t* polyNTT) {
     return polyF;
 }
 
+__uint16_t* multiplyNTT(__uint16_t* polyNTT1, __uint16_t* polyNTT2){
+
+    __uint16_t* product = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+    if (product == NULL) {
+        fprintf(stderr, "Memory allocation error - multiplyNTT\n");
+        return NULL;
+    }
+    // Multiply each element of polyNTT1 with each element of polyNTT2
+    for (int i = 0; i < 128; i++) {
+        product[2*i] = baseCaseMultiplyC0(polyNTT1[2*i], polyNTT1[2*i + 1], polyNTT2[2*i], polyNTT2[2*i + 1], gammaArray[i]);
+        product[2*i + 1] = baseCaseMultiplyC1(polyNTT1[2*i], polyNTT1[2*i + 1], polyNTT2[2*i], polyNTT2[2*i + 1]);
+    }
+
+    return product;
+}
+
+__uint16_t baseCaseMultiplyC0(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1, __uint16_t gamma){
+
+    __uint16_t c0;
+    c0 = addModq( mulModq(a0, b0), mulModq(mulModq(a1, b1), gamma));
+
+    return c0;
+}
+__uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1){
+
+    __uint16_t c1;
+    c1 = addModq( mulModq(a0, b0), mulModq(a1, b1));
+
+    return c1;
+}
+
 __uint16_t reduceBarrett(__uint32_t aMul) {
     // Implement the Barrett reduction algorithm to do a multiplication between 12-bit integers.
     __uint32_t t = ((__uint64_t)aMul*(__uint64_t)r_BARRETT) >> (2*k_BARRETT); // Generate a 13-bit integer

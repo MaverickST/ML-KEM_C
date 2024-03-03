@@ -8,7 +8,6 @@
 
 int main() {
 
-    // runTest_NTT_inverseNTT();
 
     // __uint16_t i = 97;
     // printf("i = %d\n", bitRev7(i));
