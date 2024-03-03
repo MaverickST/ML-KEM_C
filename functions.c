@@ -113,38 +113,38 @@ __uint16_t decompress(__uint16_t numMod_2d, __uint8_t d) {
     return rounding(numDecompress);
 }
 
-// unsigned char* byteEncode(__uint16_t F[], __uint16_t d) {
-//     // ByteEncoded serializes an array of d-bit integers into an array of 32d bytes.
-//     //Encodes an array of d-bit integers into a byte array of 32d, for 1 ≤ d ≤ 12
+__uint8_t* byteEncode(__uint16_t F[], __uint16_t d) {
+    // ByteEncoded serializes an array of d-bit integers into an array of 32d bytes.
+    //Encodes an array of d-bit integers into a byte array of 32d, for 1 ≤ d ≤ 12
 
-//     // Create an array of bits
-//     __uint16_t numBits = 256*d;
+    // Create an array of bits
+    __uint16_t numBits = 256*d;
 
-//     // Create an array of bits
-//     unsigned char* bitArray = (unsigned char*)calloc(numBits + 1, sizeof(unsigned char));
-//     if (bitArray == NULL) {
-//         fprintf(stderr, "Memory allocation error - byteEncode\n");
-//         return NULL;
-//     }
-
-
-//     for (int i = 0; i < 256; i++) {
-//         __uint16_t a = F[i];
-//         for (int j = 0; j < d; j++) {
-//             bitArray[i * d + j] = (a%2) + '0';
-//             //a = a >> 1;
-//             a = (a - (bitArray[i * d + j] - '0')) / 2;
-//         }
-//     }
+    // Create an array of bits
+    __uint32_t numBitsArray = numBits / 32;
+    __uint32_t* bitArray = (__uint32_t*)calloc(numBitsArray, sizeof(__uint32_t));
+    if (bitArray == NULL) {
+        fprintf(stderr, "Memory allocation error - byteEncode\n");
+        return NULL;
+    }
 
 
-//     unsigned char* byteArray = BitsToBytes(bitArray);
+    for (__uint16_t i = 0; i < 256; i++) {
+        __uint32_t a = F[i];
+        for (int j = 0; j < d; j++) {
+            bitArray[(i*d + j)/32] |= (a%2) << (i*d + j);
+            a = (a - ((bitArray[(i*d + j)/32] >> ((i*d + j)%32)) & 0x01) ) / 2;
+        }
+    }
 
-//     // Free the allocated memory
-//     free(bitArray);
+    __uint8_t* byteArray = bitsToBytes(bitArray, numBits/8);
 
-//     return byteArray;
-// }
+    // Free the allocated memory
+    free(bitArray);
+
+
+    return byteArray;
+}
 
 __uint16_t* byteDecode(__uint8_t* byteArray, __uint8_t d){
     // Decodes an array of 32d bytes into an array of 256 d-bit integers mod q (if d<12, else mod 2^d).
@@ -295,4 +295,5 @@ __uint16_t mulModq(__uint16_t a, __uint16_t b){
     __uint32_t mulResult = (__uint32_t)a*(__uint32_t)b;
     return reduceBarrett(mulResult);
 }
+
 

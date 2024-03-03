@@ -7,10 +7,10 @@
 #include "test.h"
 
 int main() {
-
-
-    // __uint16_t i = 97;
-    // printf("i = %d\n", bitRev7(i));
+  
+    runTestsConvertions();
+    runTestCompress();
+    runTestsEncode();
 
     return 0;
 }
