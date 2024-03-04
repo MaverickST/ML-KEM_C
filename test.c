@@ -171,6 +171,27 @@ void runTestEncodeDecode(__uint8_t d){
 
 }
 
+void runTestSamples(__uint8_t eta){ 
+    // Testing functions sampleNTT and SamplePolyCBD
+
+    __uint8_t* randomBytes = generateRandomBytes(2*eta);
+    __uint16_t* polyNTT = sampleNTT(randomBytes);
+    __uint16_t* poly = samplePolyCBD(randomBytes, eta);
+
+    printf("Random bytes: \n");
+    printBytes(randomBytes, 2*eta);
+
+    printf("Poly NTT: \n");
+    printPoly(polyNTT);
+
+    printf("Poly CBD: \n");
+    printPoly(poly);
+
+    free(randomBytes);
+    free(polyNTT);
+    free(poly);
+}
+
 void runTest_NTT_inverseNTT(){
 
     __uint16_t* intArray = generateRandomPoly(Q);
