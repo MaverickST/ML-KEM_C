@@ -7,10 +7,8 @@
 #include "test.h"
 
 int main() {
-  
-    runTestsConvertions();
-    runTestCompress();
-    runTestsEncode();
+    
+    runTest_NTT_inverseNTT();
 
     return 0;
 }
