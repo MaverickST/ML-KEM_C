@@ -113,7 +113,7 @@ __uint16_t decompress(__uint16_t numMod_2d, __uint8_t d) {
     return rounding(numDecompress);
 }
 
-__uint8_t* byteEncode(__uint16_t F[], __uint16_t d) {
+__uint8_t* byteEncode(__uint16_t* F, __uint8_t d) {
     // ByteEncoded serializes an array of d-bit integers into an array of 32d bytes.
     //Encodes an array of d-bit integers into a byte array of 32d, for 1 ≤ d ≤ 12
 
@@ -128,12 +128,11 @@ __uint8_t* byteEncode(__uint16_t F[], __uint16_t d) {
         return NULL;
     }
 
-
-    for (__uint16_t i = 0; i < 256; i++) {
+    for (int i = 0; i < 256; i++) {
         __uint32_t a = F[i];
         for (int j = 0; j < d; j++) {
             bitArray[(i*d + j)/32] |= (a%2) << (i*d + j);
-            a = (a - ((bitArray[(i*d + j)/32] >> ((i*d + j)%32)) & 0x01) ) / 2;
+            a = subModq(a , ((bitArray[(i*d + j)/32] >> ((i*d + j)%32)) & 0x01) ) / 2;
         }
     }
 
@@ -141,7 +140,6 @@ __uint8_t* byteEncode(__uint16_t F[], __uint16_t d) {
 
     // Free the allocated memory
     free(bitArray);
-
 
     return byteArray;
 }
