@@ -1,9 +1,13 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
-#define Q 3329
 #define N 256
+#define Q 3329
 #define K 2
+#define ETA_1 3
+#define ETA_2 2
+#define D_u 10
+#define D_v 4
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +35,10 @@ __uint16_t decompress(__uint16_t numMod_2d, __uint8_t d);
 __uint8_t* byteEncode(__uint16_t* F, __uint8_t d);
 __uint16_t* byteDecode(__uint8_t* byteArray, __uint8_t d);
 
+// Algorithm 6: SampleNTT
+__uint16_t* sampleNTT(__uint8_t* byteArray);
+// Algorithm 7: SamplePolyCBDη
+__uint16_t* samplePolyCBD(__uint8_t* byteArray, __uint8_t eta);
 // Algorithm 8: NTT
 __uint16_t* polyF2polyNTT(__uint16_t* polyF);
 // Algorithm 9: Inverse NTT

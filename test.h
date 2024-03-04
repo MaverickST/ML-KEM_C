@@ -16,6 +16,7 @@ void runTestsEncode();
 void runTestByteDecode(__uint8_t d);
 void runTestByteEncode(__uint8_t d);
 void runTestEncodeDecode(__uint8_t d);
+void runTestSamples(__uint8_t eta);
 void runTest_NTT_inverseNTT();
 void runTestMultiplyNTT();
 __uint16_t* generateRandomPoly(__uint16_t mod);
