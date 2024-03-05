@@ -128,15 +128,15 @@ __uint8_t* byteEncode(__uint16_t* F, __uint8_t d) {
         return NULL;
     }
 
-    for (int i = 0; i < 256; i++) {
-        __uint32_t a = F[i];
-        for (int j = 0; j < d; j++) {
-            bitArray[(i*d + j)/32] |= (a%2) << (i*d + j);
+    for (__uint16_t i = 0; i <= 256; i++) {
+        __uint16_t a = F[i];
+        for (__uint16_t j = 0; j < d; j++) {
+            bitArray[(i*d + j)/32] |= (a%2)  << ((i*d + j)%32);
             a = subModq(a , ((bitArray[(i*d + j)/32] >> ((i*d + j)%32)) & 0x01) ) / 2;
         }
     }
 
-    __uint8_t* byteArray = bitsToBytes(bitArray, numBits/8);
+    __uint8_t* byteArray = bitsToBytes(bitArray, numBits);
 
     // Free the allocated memory
     free(bitArray);

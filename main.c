@@ -8,6 +8,8 @@
 
 int main() {
 
+
+    runTestEncodeDecode(12);
     return 0;
 }
 
