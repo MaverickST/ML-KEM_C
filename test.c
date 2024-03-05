@@ -89,7 +89,7 @@ void runTestsEncode(){
 
     // Print the result (the array of bytes)
     printf("Result of byteEncode for d=%u:\n", d);
-    for (int i = 0; i < 256 * d / 8; i++) {
+    for (int i = 0; i < 32 * d / 8; i++) {
         printf("%u ", byteArray[i]);
     }
     printf("\n");
