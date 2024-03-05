@@ -20,6 +20,5 @@ void runTestSamples(__uint8_t eta);
 void runTest_NTT_inverseNTT();
 void runTestMultiplyNTT();
 __uint16_t* generateRandomPoly(__uint16_t mod);
-__uint8_t* generateRandomBytes(__uint8_t d);
 
 #endif // TEST_H

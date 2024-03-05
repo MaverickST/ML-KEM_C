@@ -128,15 +128,15 @@ __uint8_t* byteEncode(__uint16_t* F, __uint8_t d) {
         return NULL;
     }
 
-    for (int i = 0; i < 256; i++) {
-        __uint32_t a = F[i];
-        for (int j = 0; j < d; j++) {
-            bitArray[(i*d + j)/32] |= (a%2) << (i*d + j);
+    for (__uint16_t i = 0; i <= 256; i++) {
+        __uint16_t a = F[i];
+        for (__uint16_t j = 0; j < d; j++) {
+            bitArray[(i*d + j)/32] |= (a%2)  << ((i*d + j)%32);
             a = subModq(a , ((bitArray[(i*d + j)/32] >> ((i*d + j)%32)) & 0x01) ) / 2;
         }
     }
 
-    __uint8_t* byteArray = bitsToBytes(bitArray, numBits/8);
+    __uint8_t* byteArray = bitsToBytes(bitArray, numBits);
 
     // Free the allocated memory
     free(bitArray);
@@ -180,6 +180,10 @@ __uint16_t* sampleNTT(__uint8_t* byteArray){
 
     // Reserves memory for an array of 256 integers mod q (
     __uint16_t* aNTT = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+    if (aNTT == NULL) {
+        fprintf(stderr, "Memory allocation error - sampleNTT\n");
+        return NULL;
+    }
 
     int i = 0, j = 0, d1, d2;
     while(j < 256){
@@ -274,6 +278,10 @@ __uint16_t* polyNTT2polyF(__uint16_t* polyNTT) {
         }
     }
 
+    for (int i = 0; i < 256; i++){
+        polyF[i] = mulModq(polyF[i], 3303);
+    }
+
     return polyF;
 }
 
@@ -308,6 +316,15 @@ __uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uin
     return c1;
 }
 
+void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
+    // Generates an encryption key and a corresponding decryption key
+    __uint8_t* d = generateRandomBytes(1);
+
+    //__uint8_t* rho, sigma = G(d);
+
+    
+}
+
 __uint16_t reduceBarrett(__uint32_t aMul) {
     // Implement the Barrett reduction algorithm to do a multiplication between 12-bit integers.
     __uint32_t t = ((__uint64_t)aMul*(__uint64_t)r_BARRETT) >> (2*k_BARRETT); // Generate a 13-bit integer
@@ -337,4 +354,16 @@ __uint16_t mulModq(__uint16_t a, __uint16_t b){
     return reduceBarrett(mulResult);
 }
 
+__uint8_t* generateRandomBytes(__uint8_t d){
+    srand(time(NULL)); // use current time as seed for random generator
+
+    // Generate 32*d random byte, then use byteDecode function to convert to integer mod q (or mod 2^d if d<12)
+    __uint8_t* byteArray = (__uint8_t*)calloc(32*d, sizeof(__uint8_t));
+    // Fit the byteArray with random values
+    for (int i = 0; i < 32*d; i++) {
+        byteArray[i] = rand()/((RAND_MAX + 1u)/256);
+    }
+
+    return byteArray;
+}
 

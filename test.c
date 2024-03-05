@@ -89,7 +89,7 @@ void runTestsEncode(){
 
     // Print the result (the array of bytes)
     printf("Result of byteEncode for d=%u:\n", d);
-    for (int i = 0; i < 256 * d / 8; i++) {
+    for (int i = 0; i < 32 * d / 8; i++) {
         printf("%u ", byteArray[i]);
     }
     printf("\n");
@@ -244,18 +244,6 @@ __uint16_t* generateRandomPoly(__uint16_t mod){
         poly[i] = rand()/((RAND_MAX + 1u)/(mod));
     }
     return poly;
-}
-__uint8_t* generateRandomBytes(__uint8_t d){
-    srand(time(NULL)); // use current time as seed for random generator
-
-    // Generate 32*d random byte, then use byteDecode function to convert to integer mod q (or mod 2^d if d<12)
-    __uint8_t* byteArray = (__uint8_t*)calloc(32*d, sizeof(__uint8_t));
-    // Fit the byteArray with random values
-    for (int i = 0; i < 32*d; i++) {
-        byteArray[i] = rand()/((RAND_MAX + 1u)/256);
-    }
-
-    return byteArray;
 }
 
 void printPoly(__uint16_t* poly){
