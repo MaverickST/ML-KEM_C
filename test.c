@@ -96,7 +96,34 @@ void runTestsEncode(){
 
     // Free allocated memory
     free(byteArray);
+}
 
+void runTestByteEncode(__uint8_t d){
+    // Make a random test to byteDecode function
+    // Generate 32*d random byte, then use byteDecode function to convert to integer mod q (or mod 2^d if d<12)
+
+    srand(time(NULL)); // use current time as seed for random generator
+    
+    __uint16_t mod;
+    if (d < 12) {
+        mod = 1 << d;
+    }else {
+        mod = Q;
+    }
+
+    __uint16_t* intArray = generateRandomPoly(mod);
+    printf("Random integers mod %d: \n", d);
+    printPoly(intArray);
+    
+    // Test the function byteDecode
+    __uint8_t* byteArray = byteEncode(intArray, d);
+    printf("Result of byteEncode for d=%d:\n", d);
+    printBytes(byteArray, d);
+
+    free(intArray);
+    free(byteArray);
+
+}
 
 void runTestByteDecode(__uint8_t d){
     // Make a random test to byteDecode function
@@ -104,17 +131,13 @@ void runTestByteDecode(__uint8_t d){
 
     srand(time(NULL)); // use current time as seed for random generator
 
-    __uint8_t* byteArray = (__uint8_t*)calloc(32*d, sizeof(__uint8_t));
-    // Fit the byteArray with random values
-    printf("Random bytes: \n");
-    for (int i = 0; i < 32*d; i++) {
-        byteArray[i] = rand()/((RAND_MAX + 1u)/256);
-        printf("%d ", byteArray[i]);
-    }
-    printf("\n");
+    __uint8_t* byteArray = generateRandomBytes(d);
+    printf("Random bytes generated: \n");
+    printBytes(byteArray, d);
     
     // Test the function byteDecode
     __uint16_t* intArray = byteDecode(byteArray, d);
+    printf("Result of byteDecode for d=%d:\n", d);
     printPoly(intArray);
 
     free(intArray);
@@ -122,9 +145,56 @@ void runTestByteDecode(__uint8_t d){
 
 }
 
+
+void runTestEncodeDecode(__uint8_t d){
+    // Testing functions byteEncode and byteDecode
+
+    __uint16_t mod;
+    if (d < 12) {
+        mod = 1 << d;
+    }else {
+        mod = Q;
+    }
+
+    __uint16_t* intArray = generateRandomPoly(mod);
+    __uint8_t* byteArray = byteEncode(intArray, d);
+    __uint16_t* decodedArray = byteDecode(byteArray, d);
+
+    printf("IntArray: \n");
+    printPoly(intArray);
+
+    printf("ByteArray: \n");
+    printBytes(byteArray, d);
+
+    printf("DecodedArray: \n");
+    printPoly(decodedArray);
+
+}
+
+void runTestSamples(__uint8_t eta){ 
+    // Testing functions sampleNTT and SamplePolyCBD
+
+    __uint8_t* randomBytes = generateRandomBytes(2*eta);
+    __uint16_t* polyNTT = sampleNTT(randomBytes);
+    __uint16_t* poly = samplePolyCBD(randomBytes, eta);
+
+    printf("Random bytes: \n");
+    printBytes(randomBytes, 2*eta);
+
+    printf("Poly NTT: \n");
+    printPoly(polyNTT);
+
+    printf("Poly CBD: \n");
+    printPoly(poly);
+
+    free(randomBytes);
+    free(polyNTT);
+    free(poly);
+}
+
 void runTest_NTT_inverseNTT(){
 
-    __uint16_t* intArray = generateRandomPoly();
+    __uint16_t* intArray = generateRandomPoly(Q);
     printf("Int array: \n");
     printPoly(intArray);
 
@@ -136,18 +206,18 @@ void runTest_NTT_inverseNTT(){
     printf("PolyF: \n");
     printPoly(polyF);
 
-
     free(intArray);
     free(polyNTT);
     free(polyF);
+
 }
 void runTestMultiplyNTT(){
     // Make a random test to multiplyNTT function
     // Generate 2 random polynomials (f, g), and use multiplyNTT function to multiply f and g
 
-    __uint16_t* f = generateRandomPoly();
+    __uint16_t* f = generateRandomPoly(Q);
     sleep(1);
-    __uint16_t* g = generateRandomPoly();
+    __uint16_t* g = generateRandomPoly(Q);
     __uint16_t* product = multiplyNTT(f, g);
 
     printf("Array f:\n");
@@ -164,21 +234,40 @@ void runTestMultiplyNTT(){
     free(product);
 }
 
-__uint16_t* generateRandomPoly(){
+__uint16_t* generateRandomPoly(__uint16_t mod){
 
     srand(time(NULL)); // use current time as seed for random generator
     
-    // Generate 256 random integers mod q
+    // Generate 256 random integers mod q (o any number)
     __uint16_t* poly = (__uint16_t*)calloc(256, sizeof(__uint16_t));
     for (int i = 0; i < 256; i++) {
-        poly[i] = rand()/((RAND_MAX + 1u)/(Q));
+        poly[i] = rand()/((RAND_MAX + 1u)/(mod));
     }
     return poly;
+}
+__uint8_t* generateRandomBytes(__uint8_t d){
+    srand(time(NULL)); // use current time as seed for random generator
+
+    // Generate 32*d random byte, then use byteDecode function to convert to integer mod q (or mod 2^d if d<12)
+    __uint8_t* byteArray = (__uint8_t*)calloc(32*d, sizeof(__uint8_t));
+    // Fit the byteArray with random values
+    for (int i = 0; i < 32*d; i++) {
+        byteArray[i] = rand()/((RAND_MAX + 1u)/256);
+    }
+
+    return byteArray;
 }
 
 void printPoly(__uint16_t* poly){
     for (int i = 0; i < 256; i++) {
         printf("%d ", poly[i]);
+    }
+    printf("\n");
+}
+
+void printBytes(__uint8_t* byteArray, __uint8_t d){
+    for (int i = 0; i < 32*d; i++) {
+        printf("%d ", byteArray[i]);
     }
     printf("\n");
 }

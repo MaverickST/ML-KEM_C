@@ -7,10 +7,6 @@
 #include "test.h"
 
 int main() {
-  
-    runTestsConvertions();
-    runTestCompress();
-    runTestsEncode();
 
     return 0;
 }

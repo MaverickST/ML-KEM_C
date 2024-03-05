@@ -113,7 +113,7 @@ __uint16_t decompress(__uint16_t numMod_2d, __uint8_t d) {
     return rounding(numDecompress);
 }
 
-__uint8_t* byteEncode(__uint16_t F[], __uint16_t d) {
+__uint8_t* byteEncode(__uint16_t* F, __uint8_t d) {
     // ByteEncoded serializes an array of d-bit integers into an array of 32d bytes.
     //Encodes an array of d-bit integers into a byte array of 32d, for 1 ≤ d ≤ 12
 
@@ -128,12 +128,11 @@ __uint8_t* byteEncode(__uint16_t F[], __uint16_t d) {
         return NULL;
     }
 
-
-    for (__uint16_t i = 0; i < 256; i++) {
+    for (int i = 0; i < 256; i++) {
         __uint32_t a = F[i];
         for (int j = 0; j < d; j++) {
             bitArray[(i*d + j)/32] |= (a%2) << (i*d + j);
-            a = (a - ((bitArray[(i*d + j)/32] >> ((i*d + j)%32)) & 0x01) ) / 2;
+            a = subModq(a , ((bitArray[(i*d + j)/32] >> ((i*d + j)%32)) & 0x01) ) / 2;
         }
     }
 
@@ -141,7 +140,6 @@ __uint8_t* byteEncode(__uint16_t F[], __uint16_t d) {
 
     // Free the allocated memory
     free(bitArray);
-
 
     return byteArray;
 }
@@ -177,6 +175,49 @@ __uint16_t* byteDecode(__uint8_t* byteArray, __uint8_t d){
     return intArrayF;
 }
 
+__uint16_t* sampleNTT(__uint8_t* byteArray){
+    // If the input is a stream of uniformly random bytes, the output is a uniformly random element of Tq.
+
+    // Reserves memory for an array of 256 integers mod q (
+    __uint16_t* aNTT = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+
+    int i = 0, j = 0, d1, d2;
+    while(j < 256){
+        d1 = byteArray[i] + 256*(byteArray[i + 1]%16);
+        d2 = byteArray[i + 1]>>4 + 16*byteArray[i + 2];
+        if (d1 < Q) {
+            aNTT[j] = d1;
+            j++;
+        }
+        if (d2 < Q && j < 256) {
+            aNTT[j] = d2;
+            j++;
+        }
+        i += 3;
+    }
+    return aNTT;
+}
+
+__uint16_t* samplePolyCBD(__uint8_t* byteArray, __uint8_t eta){
+    // If the input is a stream of uniformly random bytes, outputs a sample from the distribution Dη(Rq).
+
+    __uint32_t* bitArray = bytesToBits(byteArray, 64*eta);
+    __uint16_t* polyCBD = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+
+    __uint16_t x, y;
+    for (int i = 0; i < 256; i++) {
+        for (int j = 0; j < eta; j++) {
+            x += (bitArray[(2*i*eta + j)>>5] >> ((2*i*eta + j)%32))&1;
+        }
+        for (int j = 0; j < eta; j++) {
+            y += (bitArray[(2*i*eta + eta + j )>>5] >> ((2*i*eta + eta + j)%32))&1;
+        }
+        polyCBD[i] = subModq(x%Q, y%Q);
+    }
+    free(bitArray);
+
+    return polyCBD;
+}
 __uint16_t* polyF2polyNTT(__uint16_t* polyF){
     // Computes the NTT representation f_ˆ of the given polynomial f ∈ Rq.
 
