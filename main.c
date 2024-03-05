@@ -8,6 +8,8 @@
 
 int main() {
 
+    runTest_NTT_inverseNTT();
+
     return 0;
 }
 
