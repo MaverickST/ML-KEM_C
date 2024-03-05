@@ -48,6 +48,9 @@ __uint16_t* multiplyNTT(__uint16_t* polyNTT1, __uint16_t* polyNTT2);
 // Algorithm 11: Base case multiply
 __uint16_t baseCaseMultiplyC0(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1, __uint16_t gamma);
 __uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1);
+// Algorithm 12: K-PKE.KeyGen()
+
+void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE);
 
 __uint8_t bitRev7(__uint8_t i);
 // Modular arithmetic functions
@@ -57,5 +60,6 @@ __uint16_t addModq(__uint16_t a, __uint16_t b);
 __uint16_t subModq(__uint16_t a, __uint16_t b);
 __uint16_t mulModq(__uint16_t a, __uint16_t b);
 
+__uint8_t* generateRandomBytes(__uint8_t d);
 
 #endif

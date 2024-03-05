@@ -9,7 +9,7 @@
 int main() {
 
 
-    runTestEncodeDecode(12);
+    runTest_NTT_inverseNTT();
     return 0;
 }
 
