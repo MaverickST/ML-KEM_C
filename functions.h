@@ -49,8 +49,10 @@ __uint16_t* multiplyNTT(__uint16_t* polyNTT1, __uint16_t* polyNTT2);
 __uint16_t baseCaseMultiplyC0(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1, __uint16_t gamma);
 __uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1);
 // Algorithm 12: K-PKE.KeyGen()
-
 void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE);
+__uint16_t** multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector);
+__uint16_t* sumPoly(__uint16_t* poly1, __uint16_t* poly2);
+__uint16_t* mulPoly(__uint16_t* poly1, __uint16_t* poly2);
 
 __uint8_t bitRev7(__uint8_t i);
 // Modular arithmetic functions

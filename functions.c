@@ -207,6 +207,10 @@ __uint16_t* samplePolyCBD(__uint8_t* byteArray, __uint8_t eta){
 
     __uint32_t* bitArray = bytesToBits(byteArray, 64*eta);
     __uint16_t* polyCBD = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+    if (polyCBD == NULL) {
+        fprintf(stderr, "Memory allocation error - samplePolyCBD\n");
+        return NULL;
+    }
 
     __uint16_t x, y;
     for (int i = 0; i < 256; i++) {
@@ -320,9 +324,119 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     // Generates an encryption key and a corresponding decryption key
     __uint8_t* d = generateRandomBytes(1);
 
-    //__uint8_t* rho, sigma = G(d);
+    __uint8_t* rho, sigma;
+    __uint8_t n = 0;
 
+    // Generates a KxK matrix of polynomials (in NTT domain) mod q
+    __uint16_t** matrixA = (__uint16_t **)calloc(K*K, sizeof(__uint16_t *));
+    if (matrixA == NULL) {
+        fprintf(stderr, "Memory allocation error (Matrix) - PKE_KeyGen\n");
+        return;
+    }
+    for (int i = 0; i < K; i++) {
+        for (int j = 0; j < K; j++) {
+            matrixA[i*K + j] = sampleNTT(d); // d -> XOF(ρ,i,j)
+        }
+    }
+
+    // Generates a Kx1 vector of polynomials mod q
+    __uint16_t** vectorS = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (vectorS == NULL) {
+        fprintf(stderr, "Memory allocation error (Vector s) - PKE_KeyGen\n");
+        return;
+    }
+    for (int i = 0; i < K; i++) {
+        vectorS[i] = samplePolyCBD(d, ETA_1); // d -> PRFη1 (σ,N)
+        n++;
+    }
+
+    // Generates a Kx1 vector of polynomials mod q
+    __uint16_t** vectorE = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (vectorE == NULL) {
+        fprintf(stderr, "Memory allocation error (Vector e) - PKE_KeyGen\n");
+        return;
+    }
+    for (int i = 0; i < K; i++) {
+        vectorE[i] = samplePolyCBD(d, ETA_2); // d -> PRFη1 (σ,N)
+        n++;
+    }
+
+    // Calculations and transformations
+
+    // s vector in NTT domain
+    __uint16_t** vectorS_NTT = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (vectorS_NTT == NULL) {
+        fprintf(stderr, "Memory allocation error (Vector s) - PKE_KeyGen\n");
+        return;
+    }
+    for (int i = 0; i < K; i++) {
+        vectorS_NTT[i] = polyF2polyNTT(vectorS[i]);
+    }
+    // e vector in NTT domain
+    __uint16_t** vectorE_NTT = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (vectorE_NTT == NULL) {
+        fprintf(stderr, "Memory allocation error (Vector e) - PKE_KeyGen\n");
+        return;
+    }
+    for (int i = 0; i < K; i++) {
+        vectorE_NTT[i] = polyF2polyNTT(vectorE[i]);
+    }
+    // t vector in NTT domain
+    __uint16_t** vectorT_NTT = multiplyMatrixByVector(matrixA, vectorS_NTT);
+
+
+
+
+    // Free matrix elements from memory
+    for(int i = 0; i < K*K; i++) {
+        free(matrixA[i]);
+    }
+    free(matrixA);
     
+}
+
+__uint16_t **multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector){
+
+
+    __uint16_t **product = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (product == NULL) {
+        fprintf(stderr, "Memory allocation error - multiplyMatrixByVector\n");
+        return NULL;
+    }
+    
+    for (int i = 0; i < K; i++) {
+        for (int j = 0; j < K; j++) {
+            product[i] = sumPoly(product[i], mulPoly(matrix[i*K + j], vector[j]));
+        }
+    }
+
+    return product;
+}
+
+__uint16_t* sumPoly(__uint16_t* poly1, __uint16_t* poly2) {
+
+    __uint16_t* sum = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+    if (sum == NULL) {
+        fprintf(stderr, "Memory allocation error - sumPoly\n");
+        return NULL;
+    }
+    for (int i = 0; i < 256; i++) {
+        sum[i] = addModq(poly1[i], poly2[i]);
+    }
+    return sum;
+}
+
+__uint16_t* mulPoly(__uint16_t *poly1, __uint16_t *poly2) {
+
+    __uint16_t *product = (__uint16_t *)calloc(256, sizeof(__uint16_t));
+    if (product == NULL) {
+        fprintf(stderr, "Memory allocation error - mulPoly\n");
+        return NULL;
+    }
+    for (int i = 0; i < 256; i++) {
+        product[i] = mulModq(poly1[i], poly2[i]);
+    }
+    return product;
 }
 
 __uint16_t reduceBarrett(__uint32_t aMul) {
@@ -355,7 +469,6 @@ __uint16_t mulModq(__uint16_t a, __uint16_t b){
 }
 
 __uint8_t* generateRandomBytes(__uint8_t d){
-    srand(time(NULL)); // use current time as seed for random generator
 
     // Generate 32*d random byte, then use byteDecode function to convert to integer mod q (or mod 2^d if d<12)
     __uint8_t* byteArray = (__uint8_t*)calloc(32*d, sizeof(__uint8_t));
