@@ -102,7 +102,6 @@ void runTestByteEncode(__uint8_t d){
     // Make a random test to byteDecode function
     // Generate 32*d random byte, then use byteDecode function to convert to integer mod q (or mod 2^d if d<12)
 
-    srand(time(NULL)); // use current time as seed for random generator
     
     __uint16_t mod;
     if (d < 12) {
@@ -128,8 +127,6 @@ void runTestByteEncode(__uint8_t d){
 void runTestByteDecode(__uint8_t d){
     // Make a random test to byteDecode function
     // Generate 32*d random byte, then use byteDecode function to convert to integer mod q (or mod 2^d if d<12)
-
-    srand(time(NULL)); // use current time as seed for random generator
 
     __uint8_t* byteArray = generateRandomBytes(d);
     printf("Random bytes generated: \n");
@@ -234,9 +231,32 @@ void runTestMultiplyNTT(){
     free(product);
 }
 
-__uint16_t* generateRandomPoly(__uint16_t mod){
+void runTestMultiplySumPoly() {
 
-    srand(time(NULL)); // use current time as seed for random generator
+    __uint16_t* poly1 = generateRandomPoly(Q);
+    __uint16_t* poly2 = generateRandomPoly(Q);
+    __uint16_t* sum = sumPoly(poly1, poly2);
+    __uint16_t* product = mulPoly(poly1, poly2);
+
+    printf("Poly1: \n");
+    printPoly(poly1);
+
+    printf("Poly2: \n");
+    printPoly(poly2);
+
+    printf("Sum: \n");
+    printPoly(sum);
+
+    printf("Product: \n");
+    printPoly(product);
+
+    free(poly1);
+    free(poly2);
+    free(sum);
+    free(product);
+}
+
+__uint16_t* generateRandomPoly(__uint16_t mod){
     
     // Generate 256 random integers mod q (o any number)
     __uint16_t* poly = (__uint16_t*)calloc(256, sizeof(__uint16_t));
