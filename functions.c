@@ -1,4 +1,5 @@
 #include "functions.h"
+#include "test.h"
 #include "arrays.h"
 
 __uint8_t bitRev7(__uint8_t i){
@@ -238,7 +239,7 @@ __uint16_t* polyF2polyNTT(__uint16_t* polyF){
     for (int i = 0; i < 256; i++) {
         polyNTT[i] = polyF[i];
     }
-
+    
     __uint16_t zeta, t;
     int k = 1;
     for (int len = 128; len >= 2; len = len/2){
@@ -339,7 +340,7 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
         }
     }
 
-    // Generates a Kx1 vector of polynomials mod q
+    // Generates a Kx1 vector (s vector) of polynomials mod q
     __uint16_t** vectorS = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
     if (vectorS == NULL) {
         fprintf(stderr, "Memory allocation error (Vector s) - PKE_KeyGen\n");
@@ -350,7 +351,7 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
         n++;
     }
 
-    // Generates a Kx1 vector of polynomials mod q
+    // Generates a Kx1 vector (e vector) of polynomials mod q
     __uint16_t** vectorE = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
     if (vectorE == NULL) {
         fprintf(stderr, "Memory allocation error (Vector e) - PKE_KeyGen\n");
@@ -382,8 +383,9 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
         vectorE_NTT[i] = polyF2polyNTT(vectorE[i]);
     }
     // t vector in NTT domain
-    __uint16_t** vectorT_NTT = multiplyMatrixByVector(matrixA, vectorS_NTT);
+    __uint16_t** vectorT_NTT = sumVector(multiplyMatrixByVector(matrixA, vectorS_NTT), vectorE_NTT);
 
+    // ek_PKE generation
 
 
 
@@ -395,22 +397,52 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     
 }
 
-__uint16_t **multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector){
+__uint16_t *ekGeneration(__uint8_t* ekPKE, __uint16_t **tNTT, __uint8_t *rho) {
 
+    for (__uint16_t i = 0; i < K; i++) {
+        __uint8_t* tNTT_encoded = byteEncode( tNTT[i], 12); // byte array
+        //                                                 384     K     rho size
+        // __uint8_t* byteArrayEncoded = (__uint8_t*)calloc( 12*32*(i + 1) + 32, sizeof(__uint8_t));
+        __uint8_t* byteArrayEncoded = concatenateBytes(tNTT_encoded, rho, 12*32*(i + 1), 32);
+    }
+    
+}
+
+__uint16_t **multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector){
 
     __uint16_t **product = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
     if (product == NULL) {
         fprintf(stderr, "Memory allocation error - multiplyMatrixByVector\n");
         return NULL;
     }
-    
+    // Reservation of each element of the vector product
     for (int i = 0; i < K; i++) {
-        for (int j = 0; j < K; j++) {
-            product[i] = sumPoly(product[i], mulPoly(matrix[i*K + j], vector[j]));
+        product[i] = (__uint16_t *)calloc(256, sizeof(__uint16_t));
+        if (product[i] == NULL) {
+            fprintf(stderr, "Memory allocation error - multiplyMatrixByVector\n");
+            return NULL;
         }
     }
-
+    for (int i = 0; i < K; i++) {
+        for (int j = 0; j < K; j++) {
+            product[i] = sumPoly(product[i], multiplyNTT(matrix[i*K + j], vector[j]));
+        }
+    }
     return product;
+}
+
+__uint16_t **sumVector(__uint16_t **vector1, __uint16_t **vector2) {
+    
+    __uint16_t **sumResult = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (sumResult == NULL) {
+        fprintf(stderr, "Memory allocation error - sumVector\n");
+        return NULL;
+    }
+    // Sum of each element of the vectors 
+    for (int i = 0; i < K; i++) {
+        sumResult[i] = sumPoly(vector1[i], vector2[i]);
+    }
+    return sumResult;
 }
 
 __uint16_t* sumPoly(__uint16_t* poly1, __uint16_t* poly2) {
@@ -437,6 +469,27 @@ __uint16_t* mulPoly(__uint16_t *poly1, __uint16_t *poly2) {
         product[i] = mulModq(poly1[i], poly2[i]);
     }
     return product;
+}
+
+__uint8_t *concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2) {
+    // Concatenates two byte arrays
+
+    __uint8_t *concBytes = (__uint8_t *)calloc(numBytes1 + numBytes2, sizeof(__uint8_t));
+    if (concBytes == NULL) {
+        fprintf(stderr, "Memory allocation error - contateBytes\n");
+        return NULL;
+    }
+    // concBytes = (byteArray1 << numBytes1) | byteArray2;
+
+    for (int i = 0; i < numBytes1 + numBytes2; i++) {
+        if (i < numBytes2) {
+            concBytes[i] = byteArray2[i];
+        }else {
+            concBytes[i] = byteArray1[i - numBytes2];
+        }
+    }
+
+    return concBytes;
 }
 
 __uint16_t reduceBarrett(__uint32_t aMul) {
