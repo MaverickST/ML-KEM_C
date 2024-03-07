@@ -386,8 +386,7 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     __uint16_t** vectorT_NTT = sumVector(multiplyMatrixByVector(matrixA, vectorS_NTT), vectorE_NTT);
 
     // ek_PKE generation
-
-
+    // ekPKE = ekGeneration(ekPKE, vectorT_NTT, rho);
 
     // Free matrix elements from memory
     for(int i = 0; i < K*K; i++) {
@@ -397,34 +396,55 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     
 }
 
-void ekGeneration(__uint8_t* ekPKE, __uint16_t **tNTT, __uint8_t *rho) {
+__uint8_t* ekGeneration(__uint8_t* ekPKE, __uint16_t **tNTT, __uint8_t *rho) {
 
 
     __uint8_t* byteArrayEncoded;
     __uint8_t* byteArrayAux;
+    __uint8_t* tNTT_encoded;
 
     for (__uint16_t i = 0; i < K; i++) {
-        __uint8_t* tNTT_encoded = byteEncode(tNTT[i], 12); // byte array
+        tNTT_encoded = byteEncode(tNTT[i], 12); // byte array
         //                                                 384     K     rho size
         // __uint8_t* byteArrayEncoded = (__uint8_t*)calloc( 12*32*(i + 1) + 32, sizeof(__uint8_t));
-        if (i == 0) {
-            byteArrayAux = concatenateBytes(tNTT_encoded, rho, 12*32, 32);
-        }else {
+        if(i == 0){
+            byteArrayEncoded = concatenateBytes(tNTT_encoded, byteEncode(tNTT[i + 1], 12), 12*32, 12*32);
+            // printf("ByteArrayEncoded: \n");
+            // printBytes(byteArrayEncoded, 24);
 
-            byteArrayEncoded = concatenateBytes(tNTT_encoded, byteArrayAux, 12*32, 12*32*(i + 1));
+        }else if (i <= K - 2) {
+
+            byteArrayAux = copyBytesArray(byteArrayEncoded, 12*32*(i + 1));
+            free(byteArrayEncoded);
+            byteArrayEncoded = NULL;
+
+            byteArrayEncoded = concatenateBytes(byteArrayAux, byteEncode(tNTT[i + 1], 12), 12*32*(i + 1), 12*32);
             free(byteArrayAux);
             byteArrayAux = NULL;
 
-            byteArrayAux = copyBytesArray(byteArrayEncoded, 12*32*(i + 2));
+            // printf("ByteArrayEncoded: \n");
+            // printBytes(byteArrayEncoded, 12*(i + 2));
+            
+        }else {
+            byteArrayAux = copyBytesArray(byteArrayEncoded, 12*32*(i + 1));
             free(byteArrayEncoded);
             byteArrayEncoded = NULL;
+
+            byteArrayEncoded = concatenateBytes(byteArrayAux, rho, 12*32*(i + 1), 32);
+            free(byteArrayAux);
+            byteArrayAux = NULL;
+
+            // printf("ByteArrayEncoded: \n");
+            // printBytes(byteArrayEncoded, 12*(i + 1) + 1);
         }
 
         free(tNTT_encoded);
         tNTT_encoded = NULL;
     }
 
-    ekPKE = copyBytesArray(byteArrayAux, 12*32*K + 32);
+    return byteArrayEncoded;
+    // ekPKE = copyBytesArray(byteArrayEncoded, 12*32*K + 32);
+    // free(byteArrayEncoded);
     
 }
 

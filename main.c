@@ -27,11 +27,12 @@ int main() {
     printBytes(rho, 1);
 
     printf("Bytes ekPKE: \n");
-    ekGeneration(ekPKE, tNTT, rho);
-    printBytes(ekPKE, 25);
+    printBytes(ekGeneration(ekPKE, tNTT, rho), 25);
+
+    printf("1\n");
 
     // free(rho);
-    free(ekPKE); // error here
+     //free(ekPKE); // error here
     // free(tNTT);
 
     return 0;
