@@ -50,7 +50,7 @@ __uint16_t baseCaseMultiplyC0(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uin
 __uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1);
 // Algorithm 12: K-PKE.KeyGen()
 void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE);
-__uint16_t* ekGeneration(__uint8_t* ekPKE, __uint16_t** tNTT, __uint8_t* rho);
+void ekGeneration(__uint8_t* ekPKE, __uint16_t** tNTT, __uint8_t* rho);
 __uint16_t** multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector);
 __uint16_t** sumVector(__uint16_t** vector1, __uint16_t** vector2);
 __uint16_t* sumPoly(__uint16_t* poly1, __uint16_t* poly2);
@@ -66,5 +66,7 @@ __uint16_t subModq(__uint16_t a, __uint16_t b);
 __uint16_t mulModq(__uint16_t a, __uint16_t b);
 
 __uint8_t* generateRandomBytes(__uint8_t d);
+
+__uint8_t* copyBytesArray(__uint8_t* byteArray, __uint16_t numBytes);
 
 #endif

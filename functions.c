@@ -397,14 +397,34 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     
 }
 
-__uint16_t *ekGeneration(__uint8_t* ekPKE, __uint16_t **tNTT, __uint8_t *rho) {
+void ekGeneration(__uint8_t* ekPKE, __uint16_t **tNTT, __uint8_t *rho) {
+
+
+    __uint8_t* byteArrayEncoded;
+    __uint8_t* byteArrayAux;
 
     for (__uint16_t i = 0; i < K; i++) {
-        __uint8_t* tNTT_encoded = byteEncode( tNTT[i], 12); // byte array
+        __uint8_t* tNTT_encoded = byteEncode(tNTT[i], 12); // byte array
         //                                                 384     K     rho size
         // __uint8_t* byteArrayEncoded = (__uint8_t*)calloc( 12*32*(i + 1) + 32, sizeof(__uint8_t));
-        __uint8_t* byteArrayEncoded = concatenateBytes(tNTT_encoded, rho, 12*32*(i + 1), 32);
+        if (i == 0) {
+            byteArrayAux = concatenateBytes(tNTT_encoded, rho, 12*32, 32);
+        }else {
+
+            byteArrayEncoded = concatenateBytes(tNTT_encoded, byteArrayAux, 12*32, 12*32*(i + 1));
+            free(byteArrayAux);
+            byteArrayAux = NULL;
+
+            byteArrayAux = copyBytesArray(byteArrayEncoded, 12*32*(i + 2));
+            free(byteArrayEncoded);
+            byteArrayEncoded = NULL;
+        }
+
+        free(tNTT_encoded);
+        tNTT_encoded = NULL;
     }
+
+    ekPKE = copyBytesArray(byteArrayAux, 12*32*K + 32);
     
 }
 
@@ -482,10 +502,10 @@ __uint8_t *concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint
     // concBytes = (byteArray1 << numBytes1) | byteArray2;
 
     for (int i = 0; i < numBytes1 + numBytes2; i++) {
-        if (i < numBytes2) {
-            concBytes[i] = byteArray2[i];
+        if (i < numBytes1) {
+            concBytes[i] = byteArray1[i];
         }else {
-            concBytes[i] = byteArray1[i - numBytes2];
+            concBytes[i] = byteArray2[i - numBytes1];
         }
     }
 
@@ -533,3 +553,13 @@ __uint8_t* generateRandomBytes(__uint8_t d){
     return byteArray;
 }
 
+__uint8_t *copyBytesArray(__uint8_t *byteArray, __uint16_t numBytes) {
+    
+    __uint8_t *newByteArray = (__uint8_t *)calloc(numBytes, sizeof(__uint8_t));
+
+    for (int i = 0; i < numBytes; i++) {
+        newByteArray[i] = byteArray[i];
+    }
+
+    return newByteArray;
+}
