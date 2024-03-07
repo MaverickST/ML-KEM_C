@@ -256,6 +256,90 @@ void runTestMultiplySumPoly() {
     free(product);
 }
 
+void runTestMatrixVectorOperations() {
+    // Make a random test to multiplyMatrixByVector and sumVector functions
+
+    __uint16_t** matrix = (__uint16_t **)calloc(K*K, sizeof(__uint16_t *));
+    if (matrix == NULL) {
+        fprintf(stderr, "Memory allocation error\n");
+        exit(1);
+    }
+    __uint16_t** vector = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (vector == NULL) {
+        fprintf(stderr, "Memory allocation error\n");
+        exit(1);
+    }
+
+    printf("Matrix: \n");
+    for (int i = 0; i < K; i++) {
+        for(int j = 0; j < K; j++) {
+            matrix[i*K + j] = generateRandomPoly(Q);
+            printPoly(matrix[i*K + j]);
+        }
+        printf("\n");
+    }
+    printf("Vector: \n");
+    for (int i = 0; i < K; i++) {
+        vector[i] = generateRandomPoly(Q);
+        printPoly(vector[i]);
+    }
+
+    __uint16_t** result = multiplyMatrixByVector(matrix, vector);
+    printf("Result multiply MatrixByVector: \n");
+    for (int i = 0; i < K; i++) {
+        printPoly(result[i]);
+    }
+
+    __uint16_t** vectorSum = sumVector(vector, vector);
+    printf("Vector sum: \n");
+    for (int i = 0; i < K; i++) {
+        printPoly(vectorSum[i]);
+    }
+
+    // Free each element of the matrix
+    for (int i = 0; i < K*K; i++) {
+        free(matrix[i]);
+    }
+    free(matrix);
+
+    // Free each element of the vector
+    for (int i = 0; i < K; i++) {
+        free(vector[i]);
+    }
+    free(vector);
+
+    // Free each element of the result
+    for (int i = 0; i < K; i++) {
+        free(result[i]);
+    }
+    free(result);
+
+    // Free each element of the vectorSum
+    for (int i = 0; i < K; i++) {
+        free(vectorSum[i]);
+    }
+    free(vectorSum);
+
+}
+
+void runtTestConcatenateBytes(__uint8_t a, __uint8_t b) {
+
+    __uint8_t* bytesA = generateRandomBytes(a);
+    __uint8_t* bytesB = generateRandomBytes(b);
+
+    printf("Bytes A: \n");
+    printBytes(bytesA, a);
+
+    printf("Bytes B: \n");
+    printBytes(bytesB, b);
+
+    printf("Concatenated A||B: \n");
+    printBytes(concatenateBytes(bytesA, bytesB, 32*a, 32*b), a + b);
+
+    free(bytesA);
+    free(bytesB);
+}
+
 __uint16_t* generateRandomPoly(__uint16_t mod){
     
     // Generate 256 random integers mod q (o any number)
