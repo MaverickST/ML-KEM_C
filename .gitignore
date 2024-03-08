@@ -17,9 +17,8 @@
 *.pch
 
 # Json files
-*.json
-build
-.vscode
+.vscode/*.json
+build/outDebug
 
 # Libraries
 *.lib
