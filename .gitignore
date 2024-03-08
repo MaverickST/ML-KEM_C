@@ -18,6 +18,8 @@
 
 # Json files
 *.json
+build
+.vscode
 
 # Libraries
 *.lib
