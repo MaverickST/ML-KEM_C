@@ -385,8 +385,10 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     // t vector in NTT domain
     __uint16_t** vectorT_NTT = sumVector(multiplyMatrixByVector(matrixA, vectorS_NTT), vectorE_NTT);
 
-    // ek_PKE generation
-    // ekPKE = ekGeneration(ekPKE, vectorT_NTT, rho);
+    // Keys generation
+    struct keysPKE keys;
+
+    keys.ek = ekGeneration(vectorT_NTT, rho);
 
     // Free matrix elements from memory
     for(int i = 0; i < K*K; i++) {
@@ -396,8 +398,8 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     
 }
 
-__uint8_t* ekGeneration(__uint8_t* ekPKE, __uint16_t **tNTT, __uint8_t *rho) {
-
+__uint8_t* ekGeneration(__uint16_t **tNTT, __uint8_t *rho) {
+    // Concatenating tNTT vector with rho, generate encryption key ek.
 
     __uint8_t* byteArrayEncoded;
     __uint8_t* byteArrayAux;
@@ -405,15 +407,11 @@ __uint8_t* ekGeneration(__uint8_t* ekPKE, __uint16_t **tNTT, __uint8_t *rho) {
 
     for (__uint16_t i = 0; i < K; i++) {
         tNTT_encoded = byteEncode(tNTT[i], 12); // byte array
-        //                                                 384     K     rho size
-        // __uint8_t* byteArrayEncoded = (__uint8_t*)calloc( 12*32*(i + 1) + 32, sizeof(__uint8_t));
+
         if(i == 0){
             byteArrayEncoded = concatenateBytes(tNTT_encoded, byteEncode(tNTT[i + 1], 12), 12*32, 12*32);
-            // printf("ByteArrayEncoded: \n");
-            // printBytes(byteArrayEncoded, 24);
 
         }else if (i <= K - 2) {
-
             byteArrayAux = copyBytesArray(byteArrayEncoded, 12*32*(i + 1));
             free(byteArrayEncoded);
             byteArrayEncoded = NULL;
@@ -421,9 +419,6 @@ __uint8_t* ekGeneration(__uint8_t* ekPKE, __uint16_t **tNTT, __uint8_t *rho) {
             byteArrayEncoded = concatenateBytes(byteArrayAux, byteEncode(tNTT[i + 1], 12), 12*32*(i + 1), 12*32);
             free(byteArrayAux);
             byteArrayAux = NULL;
-
-            // printf("ByteArrayEncoded: \n");
-            // printBytes(byteArrayEncoded, 12*(i + 2));
             
         }else {
             byteArrayAux = copyBytesArray(byteArrayEncoded, 12*32*(i + 1));
@@ -434,8 +429,6 @@ __uint8_t* ekGeneration(__uint8_t* ekPKE, __uint16_t **tNTT, __uint8_t *rho) {
             free(byteArrayAux);
             byteArrayAux = NULL;
 
-            // printf("ByteArrayEncoded: \n");
-            // printBytes(byteArrayEncoded, 12*(i + 1) + 1);
         }
 
         free(tNTT_encoded);
@@ -443,10 +436,9 @@ __uint8_t* ekGeneration(__uint8_t* ekPKE, __uint16_t **tNTT, __uint8_t *rho) {
     }
 
     return byteArrayEncoded;
-    // ekPKE = copyBytesArray(byteArrayEncoded, 12*32*K + 32);
-    // free(byteArrayEncoded);
-    
 }
+
+
 
 __uint16_t **multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector){
 

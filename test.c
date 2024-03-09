@@ -340,6 +340,38 @@ void runtTestConcatenateBytes(__uint8_t a, __uint8_t b) {
     free(bytesB);
 }
 
+void runTest_ekGeneration() {
+
+    __uint8_t* ekPKE;
+    __uint16_t **tNTT = (__uint16_t**)calloc(K, sizeof(__uint16_t *));
+    __uint8_t *rho;
+
+    printf("Vector NTT: \n");
+    for (int i = 0; i < K; i++) {
+        tNTT[i] = generateRandomPoly(Q);
+        printPoly(tNTT[i]);
+    }
+    printf("\n");
+
+    printf("Bytes rho: \n");
+    rho = generateRandomBytes(1);
+    printBytes(rho, 1);
+    printf("\n");
+
+    printf("Bytes ekPKE: \n");
+    ekPKE = ekGeneration(tNTT, rho);
+    printBytes(ekPKE, 25);
+
+    // Free to each element 
+    for (int i = 0; i < K; i++){
+        free(tNTT[i]);
+    }
+    free(tNTT);
+
+    free(rho);
+    free(ekPKE);
+}
+
 __uint16_t* generateRandomPoly(__uint16_t mod){
     
     // Generate 256 random integers mod q (o any number)
