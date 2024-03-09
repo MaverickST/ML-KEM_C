@@ -195,11 +195,11 @@ void runTest_NTT_inverseNTT(){
     printf("Int array: \n");
     printPoly(intArray);
 
-    __uint16_t* polyNTT = polyF2polyNTT(intArray);
+    __uint16_t* polyNTT = NTT(intArray);
     printf("PolyNTT: \n");
     printPoly(polyNTT);
 
-    __uint16_t* polyF = polyNTT2polyF(polyNTT);
+    __uint16_t* polyF = inverseNTT(polyNTT);
     printf("PolyF: \n");
     printPoly(polyF);
 
@@ -213,7 +213,6 @@ void runTestMultiplyNTT(){
     // Generate 2 random polynomials (f, g), and use multiplyNTT function to multiply f and g
 
     __uint16_t* f = generateRandomPoly(Q);
-    sleep(1);
     __uint16_t* g = generateRandomPoly(Q);
     __uint16_t* product = multiplyNTT(f, g);
 

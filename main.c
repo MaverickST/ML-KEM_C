@@ -7,12 +7,18 @@
 #include "test.h"
 
 
-
 int main() {
 
     srand(time(NULL)); // use current time as seed for random generator
 
-    runTestVector2Bytes();
+    struct Keys kPKE = PKE_KeyGen();
+
+    printf("Encryption Key: \n");
+    printBytes(kPKE.ek, (383*K + 32)/32);
+
+    printf("Decryption Key: \n");
+    printBytes(kPKE.dk, (383*K)/32);
+
 
     return 0;
 
