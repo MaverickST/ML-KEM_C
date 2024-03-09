@@ -401,44 +401,41 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
 __uint8_t* ekGeneration(__uint16_t **tNTT, __uint8_t *rho) {
     // Concatenating tNTT vector with rho, generate encryption key ek.
 
-    __uint8_t* byteArrayEncoded;
-    __uint8_t* byteArrayAux;
-    __uint8_t* tNTT_encoded;
+    __uint8_t* ekKey = (__uint8_t *)calloc(384*K + 32, sizeof(__uint8_t));
 
-    for (__uint16_t i = 0; i < K; i++) {
-        tNTT_encoded = byteEncode(tNTT[i], 12); // byte array
-
-        if(i == 0){
-            byteArrayEncoded = concatenateBytes(tNTT_encoded, byteEncode(tNTT[i + 1], 12), 12*32, 12*32);
-
-        }else if (i <= K - 2) {
-            byteArrayAux = copyBytesArray(byteArrayEncoded, 12*32*(i + 1));
-            free(byteArrayEncoded);
-            byteArrayEncoded = NULL;
-
-            byteArrayEncoded = concatenateBytes(byteArrayAux, byteEncode(tNTT[i + 1], 12), 12*32*(i + 1), 12*32);
-            free(byteArrayAux);
-            byteArrayAux = NULL;
-            
-        }else {
-            byteArrayAux = copyBytesArray(byteArrayEncoded, 12*32*(i + 1));
-            free(byteArrayEncoded);
-            byteArrayEncoded = NULL;
-
-            byteArrayEncoded = concatenateBytes(byteArrayAux, rho, 12*32*(i + 1), 32);
-            free(byteArrayAux);
-            byteArrayAux = NULL;
-
+    for (int i = 0; i < K; i++) { 
+        // Encode polynomial.
+        __uint8_t* byteArrayEncoded = byteEncode(tNTT[i], 12);
+        // Concatenation
+        for (int j = 0; j < 384; j++) {
+            ekKey[384*i + j] = byteArrayEncoded[j];
         }
-
-        free(tNTT_encoded);
-        tNTT_encoded = NULL;
+        free(byteArrayEncoded);
+    }
+    // Concatenate rho
+    for (int i = 0; i < 32; i++) {
+        ekKey[384*K + i] = rho[i];
     }
 
-    return byteArrayEncoded;
+    return ekKey;
 }
 
+__uint8_t *dkGeneration(__uint16_t **sNTT) {
 
+    __uint8_t* dkKey = (__uint8_t*)calloc(12*32*K, sizeof(__uint8_t));
+
+    for (int i = 0; i < K; i++) {
+        // Encode polynomial
+        __uint8_t* byteArrayEncoded = byteEncode(sNTT[i], 12);
+        // Concatenation
+        for (int j = 0; j < 384; j++) {
+            dkKey[384*i + j] = byteArrayEncoded[j];
+        }
+        free(byteArrayEncoded);
+    }
+
+    return dkKey;
+}
 
 __uint16_t **multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector){
 
