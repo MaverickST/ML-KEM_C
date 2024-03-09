@@ -388,7 +388,12 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     // Keys generation
     struct keysPKE keys;
 
-    keys.ek = ekGeneration(vectorT_NTT, rho);
+    keys.ek = vector2Bytes(vectorT_NTT, 384*K + 32);
+    for (int i = 0; i < 32; i++) {
+        keys.ek[384*K + i] = rho[i];
+    }
+
+    keys.dk = vector2Bytes(vectorS_NTT, 384*K);
 
     // Free matrix elements from memory
     for(int i = 0; i < K*K; i++) {
@@ -398,43 +403,21 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     
 }
 
-__uint8_t* ekGeneration(__uint16_t **tNTT, __uint8_t *rho) {
-    // Concatenating tNTT vector with rho, generate encryption key ek.
+__uint8_t *vector2Bytes(__uint16_t **vector, __uint16_t numBytes) {
 
-    __uint8_t* ekKey = (__uint8_t *)calloc(384*K + 32, sizeof(__uint8_t));
-
-    for (int i = 0; i < K; i++) { 
-        // Encode polynomial.
-        __uint8_t* byteArrayEncoded = byteEncode(tNTT[i], 12);
-        // Concatenation
-        for (int j = 0; j < 384; j++) {
-            ekKey[384*i + j] = byteArrayEncoded[j];
-        }
-        free(byteArrayEncoded);
-    }
-    // Concatenate rho
-    for (int i = 0; i < 32; i++) {
-        ekKey[384*K + i] = rho[i];
-    }
-
-    return ekKey;
-}
-
-__uint8_t *dkGeneration(__uint16_t **sNTT) {
-
-    __uint8_t* dkKey = (__uint8_t*)calloc(12*32*K, sizeof(__uint8_t));
+    __uint8_t* byteArray = (__uint8_t*)calloc(numBytes, sizeof(__uint8_t));
 
     for (int i = 0; i < K; i++) {
         // Encode polynomial
-        __uint8_t* byteArrayEncoded = byteEncode(sNTT[i], 12);
+        __uint8_t* byteArrayEncoded = byteEncode(vector[i], 12);
         // Concatenation
         for (int j = 0; j < 384; j++) {
-            dkKey[384*i + j] = byteArrayEncoded[j];
+            byteArray[384*i + j] = byteArrayEncoded[j];
         }
         free(byteArrayEncoded);
     }
 
-    return dkKey;
+    return byteArray;
 }
 
 __uint16_t **multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector){
@@ -520,6 +503,7 @@ __uint8_t *concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint
 
     return concBytes;
 }
+
 
 __uint16_t reduceBarrett(__uint32_t aMul) {
     // Implement the Barrett reduction algorithm to do a multiplication between 12-bit integers.

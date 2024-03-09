@@ -340,7 +340,7 @@ void runtTestConcatenateBytes(__uint8_t a, __uint8_t b) {
     free(bytesB);
 }
 
-void runTest_ekGeneration() {
+void runTestVector2Bytes() {
 
     __uint8_t* ekPKE;
     __uint8_t* dkPKE;
@@ -368,11 +368,14 @@ void runTest_ekGeneration() {
     printf("\n");
 
     printf("Bytes ekPKE: \n");
-    ekPKE = ekGeneration(vector1, rho);
+    ekPKE = vector2Bytes(vector1, 384*K + 32);
+    for (int i = 0; i < 32; i++){
+        ekPKE[384*K + i] = rho[i];
+    }
     printBytes(ekPKE, (384*K + 32)/32);
 
     printf("Bytes dkPKE: \n");
-    dkPKE = dkGeneration(vector2);
+    dkPKE = vector2Bytes(vector2, 384*K);
     printBytes(dkPKE, (384*K)/32);
 
     // Free to each element 

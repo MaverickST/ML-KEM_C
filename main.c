@@ -12,6 +12,7 @@ int main() {
 
     srand(time(NULL)); // use current time as seed for random generator
 
+    runTestVector2Bytes();
 
     return 0;
 
