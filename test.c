@@ -340,16 +340,25 @@ void runtTestConcatenateBytes(__uint8_t a, __uint8_t b) {
     free(bytesB);
 }
 
-void runTest_ekGeneration() {
+void runTestVector2Bytes() {
 
     __uint8_t* ekPKE;
-    __uint16_t **tNTT = (__uint16_t**)calloc(K, sizeof(__uint16_t *));
+    __uint8_t* dkPKE;
+    __uint16_t **vector1 = (__uint16_t**)calloc(K, sizeof(__uint16_t *));
+    __uint16_t **vector2 = (__uint16_t**)calloc(K, sizeof(__uint16_t *));
     __uint8_t *rho;
 
-    printf("Vector NTT: \n");
+    printf("Vector 1: \n");
     for (int i = 0; i < K; i++) {
-        tNTT[i] = generateRandomPoly(Q);
-        printPoly(tNTT[i]);
+        vector1[i] = generateRandomPoly(Q);
+        printPoly(vector1[i]);
+    }
+    printf("\n");
+
+    printf("Vector 2: \n");
+    for (int i = 0; i < K; i++) {
+        vector2[i] = generateRandomPoly(Q);
+        printPoly(vector2[i]);
     }
     printf("\n");
 
@@ -359,17 +368,30 @@ void runTest_ekGeneration() {
     printf("\n");
 
     printf("Bytes ekPKE: \n");
-    ekPKE = ekGeneration(tNTT, rho);
-    printBytes(ekPKE, 25);
+    ekPKE = vector2Bytes(vector1, 384*K + 32);
+    for (int i = 0; i < 32; i++){
+        ekPKE[384*K + i] = rho[i];
+    }
+    printBytes(ekPKE, (384*K + 32)/32);
+
+    printf("Bytes dkPKE: \n");
+    dkPKE = vector2Bytes(vector2, 384*K);
+    printBytes(dkPKE, (384*K)/32);
 
     // Free to each element 
     for (int i = 0; i < K; i++){
-        free(tNTT[i]);
+        free(vector2[i]);
     }
-    free(tNTT);
+    free(vector2);
+
+    for (int i = 0; i < K; i++){
+        free(vector1[i]);
+    }
+    free(vector1);
 
     free(rho);
     free(ekPKE);
+    free(dkPKE);
 }
 
 __uint16_t* generateRandomPoly(__uint16_t mod){
