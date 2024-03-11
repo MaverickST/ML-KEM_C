@@ -56,6 +56,11 @@ __uint16_t baseCaseMultiplyC0(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uin
 __uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1);
 // Algorithm 12: K-PKE.KeyGen()
 struct Keys PKE_KeyGen();
+
+// Algorithm 14: K-PKE.Decrypt()
+__uint8_t* PKE_Decrypt(__uint8_t* dkPKE, __uint8_t* cipherText);
+
+__uint16_t* vectorDotProduct(__uint16_t** vector1, __uint16_t** vector2);
 __uint8_t* vector2Bytes(__uint16_t** vector, __uint16_t numBytes);
 __uint16_t** multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector);
 __uint16_t** sumVector(__uint16_t** vector1, __uint16_t** vector2);
@@ -72,6 +77,7 @@ __uint16_t subModq(__uint16_t a, __uint16_t b);
 __uint16_t mulModq(__uint16_t a, __uint16_t b);
 
 __uint8_t* generateRandomBytes(__uint8_t d);
+void freeVector(__uint16_t **vector, __uint8_t sizeK);
 
 __uint8_t* copyBytesArray(__uint8_t* byteArray, __uint16_t numBytes);
 
