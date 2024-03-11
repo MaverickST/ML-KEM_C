@@ -227,12 +227,12 @@ __uint16_t* samplePolyCBD(__uint8_t* byteArray, __uint8_t eta){
 
     return polyCBD;
 }
-__uint16_t* polyF2polyNTT(__uint16_t* polyF){
+__uint16_t* NTT(__uint16_t* polyF){
     // Computes the NTT representation f_ˆ of the given polynomial f ∈ Rq.
 
     __uint16_t* polyNTT = (__uint16_t*)calloc(256, sizeof(__uint16_t));
     if (polyNTT == NULL) {
-        fprintf(stderr, "Memory allocation error - polyF2polyNTT\n");
+        fprintf(stderr, "Memory allocation error - NTT\n");
         return NULL;
     }
     // Copy each element of polyF into polyNTT
@@ -256,12 +256,12 @@ __uint16_t* polyF2polyNTT(__uint16_t* polyF){
     
     return polyNTT;
 }
-__uint16_t* polyNTT2polyF(__uint16_t* polyNTT) {
+__uint16_t* inverseNTT(__uint16_t* polyNTT) {
     // Computes the polynomial f ∈ Rq corresponding to the given NTT representation f_ˆ ∈ Tq.
 
     __uint16_t* polyF = (__uint16_t*)calloc(256, sizeof(__uint16_t));
     if (polyF == NULL) {
-        fprintf(stderr, "Memory allocation error - polyNTT2polyF\n");
+        fprintf(stderr, "Memory allocation error - inverseNTT\n");
         return NULL;
     }
     // Copy each element of polyNTT into polyF
@@ -321,18 +321,19 @@ __uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uin
     return c1;
 }
 
-void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
+struct Keys PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     // Generates an encryption key and a corresponding decryption key
     __uint8_t* d = generateRandomBytes(1);
 
-    __uint8_t* rho, sigma;
+    __uint8_t* rho;
+    __uint8_t* sigma;
     __uint8_t n = 0;
 
     // Generates a KxK matrix of polynomials (in NTT domain) mod q
     __uint16_t** matrixA = (__uint16_t **)calloc(K*K, sizeof(__uint16_t *));
     if (matrixA == NULL) {
-        fprintf(stderr, "Memory allocation error (Matrix) - PKE_KeyGen\n");
-        return;
+        fprintf(stderr, "Memory allocation error (matrixA) - PKE_KeyGen\n");
+        // return NULL;
     }
     for (int i = 0; i < K; i++) {
         for (int j = 0; j < K; j++) {
@@ -344,7 +345,7 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     __uint16_t** vectorS = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
     if (vectorS == NULL) {
         fprintf(stderr, "Memory allocation error (Vector s) - PKE_KeyGen\n");
-        return;
+        // return;
     }
     for (int i = 0; i < K; i++) {
         vectorS[i] = samplePolyCBD(d, ETA_1); // d -> PRFη1 (σ,N)
@@ -355,7 +356,7 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     __uint16_t** vectorE = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
     if (vectorE == NULL) {
         fprintf(stderr, "Memory allocation error (Vector e) - PKE_KeyGen\n");
-        return;
+        // return;
     }
     for (int i = 0; i < K; i++) {
         vectorE[i] = samplePolyCBD(d, ETA_2); // d -> PRFη1 (σ,N)
@@ -368,63 +369,83 @@ void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     __uint16_t** vectorS_NTT = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
     if (vectorS_NTT == NULL) {
         fprintf(stderr, "Memory allocation error (Vector s) - PKE_KeyGen\n");
-        return;
+        // return;
     }
     for (int i = 0; i < K; i++) {
-        vectorS_NTT[i] = polyF2polyNTT(vectorS[i]);
+        vectorS_NTT[i] = NTT(vectorS[i]);
     }
     // e vector in NTT domain
     __uint16_t** vectorE_NTT = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
     if (vectorE_NTT == NULL) {
         fprintf(stderr, "Memory allocation error (Vector e) - PKE_KeyGen\n");
-        return;
+        // return;
     }
     for (int i = 0; i < K; i++) {
-        vectorE_NTT[i] = polyF2polyNTT(vectorE[i]);
+        vectorE_NTT[i] = NTT(vectorE[i]);
     }
     // t vector in NTT domain
-    __uint16_t** vectorT_NTT = sumVector(multiplyMatrixByVector(matrixA, vectorS_NTT), vectorE_NTT);
+    __uint16_t** vectorResult = multiplyMatrixByVector(matrixA, vectorS_NTT);
+    __uint16_t** vectorT_NTT = sumVector(vectorResult, vectorE_NTT);
 
-    // ek_PKE generation
+    // Keys generation
+    struct Keys keysPKE;
 
+    keysPKE.ek = vector2Bytes(vectorT_NTT, 384*K + 32);
+    for (int i = 0; i < 32; i++) {
+        keysPKE.ek[384*K + i] = rho[i];
+    }
 
+    keysPKE.dk = vector2Bytes(vectorS_NTT, 384*K);
 
     // Free matrix elements from memory
     for(int i = 0; i < K*K; i++) {
         free(matrixA[i]);
     }
     free(matrixA);
-    
+
+    for(int i = 0; i < K; i++) {
+        free(vectorS[i]);
+    }
+    free(vectorS);
+
+    for(int i = 0; i < K; i++) {
+        free(vectorE[i]);
+    }
+    free(vectorE);
+
+    for(int i = 0; i < K; i++) {
+        free(vectorT_NTT[i]);
+    }
+    free(vectorT_NTT);
+
+    for(int i = 0; i < K; i++) {
+        free(vectorS_NTT[i]);
+    }
+    free(vectorS_NTT);
+
+    for(int i = 0; i < K; i++) {
+        free(vectorE_NTT[i]);
+    }
+    free(vectorE_NTT);
+
+    return keysPKE;
 }
 
-void ekGeneration(__uint8_t* ekPKE, __uint16_t **tNTT, __uint8_t *rho) {
+__uint8_t *vector2Bytes(__uint16_t **vector, __uint16_t numBytes) {
 
+    __uint8_t* byteArray = (__uint8_t*)calloc(numBytes, sizeof(__uint8_t));
 
-    __uint8_t* byteArrayEncoded;
-    __uint8_t* byteArrayAux;
-
-    for (__uint16_t i = 0; i < K; i++) {
-        __uint8_t* tNTT_encoded = byteEncode(tNTT[i], 12); // byte array
-        //                                                 384     K     rho size
-        // __uint8_t* byteArrayEncoded = (__uint8_t*)calloc( 12*32*(i + 1) + 32, sizeof(__uint8_t));
-        if (i == 0) {
-            byteArrayAux = concatenateBytes(tNTT_encoded, rho, 12*32, 32);
-        }else {
-
-            byteArrayEncoded = concatenateBytes(tNTT_encoded, byteArrayAux, 12*32, 12*32*(i + 1));
-            free(byteArrayAux);
-            byteArrayAux = NULL;
-
-            byteArrayAux = copyBytesArray(byteArrayEncoded, 12*32*(i + 2));
-            free(byteArrayEncoded);
-            byteArrayEncoded = NULL;
+    for (int i = 0; i < K; i++) {
+        // Encode polynomial
+        __uint8_t* byteArrayEncoded = byteEncode(vector[i], 12);
+        // Concatenation
+        for (int j = 0; j < 384; j++) {
+            byteArray[384*i + j] = byteArrayEncoded[j];
         }
-
-        free(tNTT_encoded);
-        tNTT_encoded = NULL;
+        free(byteArrayEncoded);
     }
 
-    ekPKE = copyBytesArray(byteArrayAux, 12*32*K + 32);
+    return byteArray;
     
 }
 
@@ -490,6 +511,7 @@ __uint8_t PKE_Encrypt(__uint8_t *ekPKE, __uint8_t *m, __uint8_t *r, __uint8_t d)
 
 
     return 1;
+
 }
 
 __uint16_t **multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector){
@@ -509,13 +531,21 @@ __uint16_t **multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector){
     }
     for (int i = 0; i < K; i++) {
         for (int j = 0; j < K; j++) {
-            product[i] = sumPoly(product[i], multiplyNTT(matrix[i*K + j], vector[j]));
+            // Multiply matrix(i,j) by vector(j)
+            __uint16_t* polyMultiply = multiplyNTT(matrix[i*K + j], vector[j]);
+            __uint16_t* polySum = sumPoly(product[i], polyMultiply);
+            for (int n = 0; n < 256; n++) {
+                product[i][n] = polySum[n];
+            }
+            free(polyMultiply);
+            free(polySum);
         }
     }
     return product;
 }
 
 __uint16_t **sumVector(__uint16_t **vector1, __uint16_t **vector2) {
+    // Sum 2 vectors of polynomials mod q
     
     __uint16_t **sumResult = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
     if (sumResult == NULL) {
@@ -575,6 +605,7 @@ __uint8_t *concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint
 
     return concBytes;
 }
+
 
 __uint16_t reduceBarrett(__uint32_t aMul) {
     // Implement the Barrett reduction algorithm to do a multiplication between 12-bit integers.

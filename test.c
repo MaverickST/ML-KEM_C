@@ -195,11 +195,11 @@ void runTest_NTT_inverseNTT(){
     printf("Int array: \n");
     printPoly(intArray);
 
-    __uint16_t* polyNTT = polyF2polyNTT(intArray);
+    __uint16_t* polyNTT = NTT(intArray);
     printf("PolyNTT: \n");
     printPoly(polyNTT);
 
-    __uint16_t* polyF = polyNTT2polyF(polyNTT);
+    __uint16_t* polyF = inverseNTT(polyNTT);
     printf("PolyF: \n");
     printPoly(polyF);
 
@@ -213,7 +213,6 @@ void runTestMultiplyNTT(){
     // Generate 2 random polynomials (f, g), and use multiplyNTT function to multiply f and g
 
     __uint16_t* f = generateRandomPoly(Q);
-    sleep(1);
     __uint16_t* g = generateRandomPoly(Q);
     __uint16_t* product = multiplyNTT(f, g);
 
@@ -338,6 +337,60 @@ void runtTestConcatenateBytes(__uint8_t a, __uint8_t b) {
 
     free(bytesA);
     free(bytesB);
+}
+
+void runTestVector2Bytes() {
+
+    __uint8_t* ekPKE;
+    __uint8_t* dkPKE;
+    __uint16_t **vector1 = (__uint16_t**)calloc(K, sizeof(__uint16_t *));
+    __uint16_t **vector2 = (__uint16_t**)calloc(K, sizeof(__uint16_t *));
+    __uint8_t *rho;
+
+    printf("Vector 1: \n");
+    for (int i = 0; i < K; i++) {
+        vector1[i] = generateRandomPoly(Q);
+        printPoly(vector1[i]);
+    }
+    printf("\n");
+
+    printf("Vector 2: \n");
+    for (int i = 0; i < K; i++) {
+        vector2[i] = generateRandomPoly(Q);
+        printPoly(vector2[i]);
+    }
+    printf("\n");
+
+    printf("Bytes rho: \n");
+    rho = generateRandomBytes(1);
+    printBytes(rho, 1);
+    printf("\n");
+
+    printf("Bytes ekPKE: \n");
+    ekPKE = vector2Bytes(vector1, 384*K + 32);
+    for (int i = 0; i < 32; i++){
+        ekPKE[384*K + i] = rho[i];
+    }
+    printBytes(ekPKE, (384*K + 32)/32);
+
+    printf("Bytes dkPKE: \n");
+    dkPKE = vector2Bytes(vector2, 384*K);
+    printBytes(dkPKE, (384*K)/32);
+
+    // Free to each element 
+    for (int i = 0; i < K; i++){
+        free(vector2[i]);
+    }
+    free(vector2);
+
+    for (int i = 0; i < K; i++){
+        free(vector1[i]);
+    }
+    free(vector1);
+
+    free(rho);
+    free(ekPKE);
+    free(dkPKE);
 }
 
 __uint16_t* generateRandomPoly(__uint16_t mod){

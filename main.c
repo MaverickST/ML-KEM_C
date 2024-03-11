@@ -7,33 +7,18 @@
 #include "test.h"
 
 
-
 int main() {
 
     srand(time(NULL)); // use current time as seed for random generator
 
-    __uint8_t* ekPKE;
-    __uint16_t **tNTT = (__uint16_t**)calloc(K, sizeof(__uint16_t *));
-    __uint8_t *rho;
+    struct Keys kPKE = PKE_KeyGen();
 
-    printf("Vector NTT: \n");
-    for (int i = 0; i < K; i++) {
-        tNTT[i] = generateRandomPoly(Q);
-        printPoly(tNTT[i]);
-    }
+    printf("Encryption Key: \n");
+    printBytes(kPKE.ek, (383*K + 32)/32);
 
-    printf("Bytes rho: \n");
-    rho = generateRandomBytes(1);
-    printBytes(rho, 1);
+    printf("Decryption Key: \n");
+    printBytes(kPKE.dk, (383*K)/32);
 
-    printf("Bytes ekPKE: \n");
-    printBytes(ekGeneration(ekPKE, tNTT, rho), 25);
-
-    printf("1\n");
-
-    // free(rho);
-     //free(ekPKE); // error here
-    // free(tNTT);
 
     return 0;
 
