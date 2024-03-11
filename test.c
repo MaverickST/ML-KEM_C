@@ -340,6 +340,7 @@ void runtTestConcatenateBytes(__uint8_t a, __uint8_t b) {
 }
 
 void runTestVector2Bytes() {
+    // Make a random test to vector2Bytes function
 
     __uint8_t* ekPKE;
     __uint8_t* dkPKE;
@@ -391,6 +392,31 @@ void runTestVector2Bytes() {
     free(rho);
     free(ekPKE);
     free(dkPKE);
+}
+
+void runTestVectorDotProduct() {
+    // Test the function vectorDotProduct
+
+    printf("Vector 1: \n");
+    __uint16_t** vector1 = (__uint16_t**)calloc(K, sizeof(__uint16_t*));
+    for (int i = 0; i < K; i++) {
+        vector1[i] = generateRandomPoly(Q);
+        printPoly(vector1[i]);
+    }
+    printf("Vector 2: \n");
+    __uint16_t** vector2 = (__uint16_t**)calloc(K, sizeof(__uint16_t*));
+    for (int i = 0; i < K; i++) {
+        vector2[i] = generateRandomPoly(Q);
+        printPoly(vector2[i]);
+    }
+
+    printf("Vector 1 dot Vector 2: \n");
+    __uint16_t* result = vectorDotProduct(vector1, vector2);
+    printPoly(result);
+
+    freeVector(vector1, K);
+    freeVector(vector2, K);
+    free(result);
 }
 
 __uint16_t* generateRandomPoly(__uint16_t mod){

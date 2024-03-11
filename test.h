@@ -23,6 +23,7 @@ void runTestMultiplySumPoly();
 void runTestMatrixVectorOperations();
 void runtTestConcatenateBytes(__uint8_t a, __uint8_t b);
 void runTestVector2Bytes();
+void runTestVectorDotProduct();
 __uint16_t* generateRandomPoly(__uint16_t mod);
 
 #endif // TEST_H
