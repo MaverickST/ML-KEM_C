@@ -21,7 +21,7 @@ void runTestSamples(__uint8_t eta);
 void runTest_NTT_inverseNTT();
 void runTestMultiplyNTT();
 void runTestPKE_Decrypt();
-void runTestMultiplySumPoly();
+void runTestSumPoly();
 void runTestMatrixVectorOperations();
 void runtTestConcatenateBytes(__uint8_t a, __uint8_t b);
 void runTestVector2Bytes();
