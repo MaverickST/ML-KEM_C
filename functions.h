@@ -50,8 +50,12 @@ __uint16_t baseCaseMultiplyC0(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uin
 __uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1);
 // Algorithm 12: K-PKE.KeyGen()
 void PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE);
+//algorithm 13: K-PKE.Encrypt()
+__uint8_t PKE_Encrypt(__uint8_t *ekPKE, __uint8_t *m, __uint8_t *r, __uint8_t d);
+
+
 __uint8_t* ekGeneration(__uint8_t* ekPKE, __uint16_t** tNTT, __uint8_t* rho);
-__uint16_t** multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector);
+__uint16_t **multiplyMatrixByVector(__uint16_t **matrix, __uint16_t **vector);
 __uint16_t** sumVector(__uint16_t** vector1, __uint16_t** vector2);
 __uint16_t* sumPoly(__uint16_t* poly1, __uint16_t* poly2);
 __uint16_t* mulPoly(__uint16_t* poly1, __uint16_t* poly2);

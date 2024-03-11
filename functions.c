@@ -430,18 +430,66 @@ void ekGeneration(__uint8_t* ekPKE, __uint16_t **tNTT, __uint8_t *rho) {
 
 __uint8_t PKE_Encrypt(__uint8_t *ekPKE, __uint8_t *m, __uint8_t *r, __uint8_t d)
 {
+    //Input encryption key ekPKE, message m, and encryption randomness r
+    //Output ciphertext c
+    // Uses the encryption key to encrypt a plaintext message using the randomness r.
     __uint8_t* tVector = byteDecode(segmentBytesArray(ekPKE, 0, 384*K), d);
     __uint8_t* rho = segmentBytesArray(ekPKE, 384*K, 384*K + 32);
 
+    __uint8_t n = 0;
+
     // Generates a KxK matrix of polynomials (in NTT domain) mod q
     __uint16_t** matrixAT = (__uint16_t **)calloc(K*K, sizeof(__uint16_t *));
+    if (matrixAT == NULL) {
+        fprintf(stderr, "Memory allocation error (Matrix A) - PKE_Encrypt\n");
+        return;
+    }
     for (int i = 0; i < K; i++) {
         for (int j = 0; j < K; j++) {
             matrixAT[i*K + j] = sampleNTT(d); // d -> XOF(ρ,j,i)
         }
     }
 
-    return __uint8_t();
+    // Generates a Kx1 vector (s vector) of polynomials mod q
+    __uint16_t** vectorR = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (vectorR == NULL) {
+        fprintf(stderr, "Memory allocation error (Vector r) - PKE_Encrypt\n");
+        return;
+    }
+    for (int i = 0; i < K; i++) {
+        for (int j = 0; j < K; j++) {
+            vectorR[i] = samplePolyCBD(d, ETA_1); // d -> PRFη1 (r,N)
+            n++;
+        }
+    }
+
+    // Generates a Kx1 vector (e1 vector) of polynomials mod q
+    __uint16_t** vectorE1 = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (vectorE1 == NULL) {
+        fprintf(stderr, "Memory allocation error (Vector e1) - PKE_Encrypt\n");
+        return;
+    }
+    for (int i = 0; i < K; i++) {
+        vectorE1[i] = samplePolyCBD(d, ETA_2); // d -> PRFη1 (r,N)
+        n++;
+    }
+
+    __uint16_t* vectorE2 = samplePolyCBD(d, ETA_2); // d -> PRFη2 (r,N)
+
+    // r vector in NTT domain
+    __uint16_t** vectorR_NTT = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (vectorR_NTT == NULL) {
+        fprintf(stderr, "Memory allocation error (Vector r) - PKE_Encrypt\n");
+        return;
+    }
+    for (int i = 0; i < K; i++) {
+        vectorR_NTT[i] = polyF2polyNTT(vectorR[i]);
+    }
+
+    //
+
+
+    return 1;
 }
 
 __uint16_t **multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector){
