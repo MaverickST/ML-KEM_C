@@ -2,21 +2,6 @@
 #include "test.h"
 #include "arrays.h"
 
-__uint8_t bitRev7(__uint8_t i){
-
-    printf("Zeta [%d]: %d\n", i, zetaArray[i]);
-    printf("Gamma [%d]: %d\n", i, gammaArray[i]);
-
-    // Reverse input 7-bits
-    __uint8_t res = 0;
-    for(int j = 6; j >= 0; j--){
-        res |= (i & 1) << j;
-        i >>= 1;
-    }
-
-    return res;
-}
-
 __uint8_t* bitsToBytes(__uint32_t* bitArray, __uint16_t numBits) {
     //Converts a bit array (of length a multiple of eight) into an array of bytes.
   
@@ -529,7 +514,6 @@ __uint16_t *vectorDotProduct(__uint16_t **vector1, __uint16_t **vector2) {
         }
         free(resultMulPoly);
     }
-
     return result;
 }
 
@@ -608,19 +592,6 @@ __uint16_t* sumPoly(__uint16_t* poly1, __uint16_t* poly2) {
     return sum;
 }
 
-__uint16_t* mulPoly(__uint16_t *poly1, __uint16_t *poly2) {
-
-    __uint16_t *product = (__uint16_t *)calloc(256, sizeof(__uint16_t));
-    if (product == NULL) {
-        fprintf(stderr, "Memory allocation error - mulPoly\n");
-        return NULL;
-    }
-    for (int i = 0; i < 256; i++) {
-        product[i] = mulModq(poly1[i], poly2[i]);
-    }
-    return product;
-}
-
 __uint8_t *concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2) {
     // Concatenates two byte arrays
 
@@ -642,7 +613,6 @@ __uint8_t *concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint
 }
 
 __uint16_t reduceBarrett(__uint32_t aMul) {
-    // Implement the Barrett reduction algorithm to do a multiplication between 12-bit integers.
     __uint32_t t = ((__uint64_t)aMul*(__uint64_t)r_BARRETT) >> (2*k_BARRETT); // Generate a 13-bit integer
     t = aMul - t*Q;
     return conditionalReduce((__uint16_t)t);

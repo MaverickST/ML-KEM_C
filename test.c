@@ -238,13 +238,13 @@ void runTestPKE_Decrypt() {
     __uint8_t* m = PKE_Decrypt(dkPKE, cipherText);
 
     // Printing
-    printf("dkPKE: %d \n", sizeof(*dkPKE));
+    printf("dkPKE: \n");
     printBytesHex(dkPKE, 12*K);
 
-    printf("cipherText: %d \n", sizeof(*cipherText));
+    printf("cipherText: \n");
     printBytesHex(cipherText, D_u*K + D_v);
 
-    printf("m: %d \n", sizeof(*m));
+    printf("m: \n");
     printBytesHex(m, 1);
 
     // free memory
@@ -253,12 +253,11 @@ void runTestPKE_Decrypt() {
     free(m);
 }
 
-void runTestMultiplySumPoly() {
+void runTestSumPoly() {
 
     __uint16_t* poly1 = generateRandomPoly(Q);
     __uint16_t* poly2 = generateRandomPoly(Q);
     __uint16_t* sum = sumPoly(poly1, poly2);
-    __uint16_t* product = mulPoly(poly1, poly2);
 
     printf("Poly1: \n");
     printPoly(poly1);
@@ -269,13 +268,9 @@ void runTestMultiplySumPoly() {
     printf("Sum: \n");
     printPoly(sum);
 
-    printf("Product: \n");
-    printPoly(product);
-
     free(poly1);
     free(poly2);
     free(sum);
-    free(product);
 }
 
 void runTestMatrixVectorOperations() {
