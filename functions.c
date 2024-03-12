@@ -431,7 +431,9 @@ struct Keys PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
     return keysPKE;
 }
 
-__uint8_t *vector2Bytes(__uint16_t **vector, __uint16_t numBytes) {
+
+__uint8_t *vector2Bytes(__uint16_t **vector, __uint16_t numBytes)
+{
 
     __uint8_t* byteArray = (__uint8_t*)calloc(numBytes, sizeof(__uint8_t));
 
@@ -446,16 +448,24 @@ __uint8_t *vector2Bytes(__uint16_t **vector, __uint16_t numBytes) {
     }
 
     return byteArray;
-    
 }
 
-__uint8_t PKE_Encrypt(__uint8_t *ekPKE, __uint8_t *m, __uint8_t *r, __uint8_t d)
+__uint8_t PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r, __uint8_t d)
 {
     //Input encryption key ekPKE, message m, and encryption randomness r
     //Output ciphertext c
     // Uses the encryption key to encrypt a plaintext message using the randomness r.
+    __uint16_t sizeEkPKE = 384*K + 32;
+    __uint16_t sizeM = 32;
+    __uint16_t sizeR = 32;
+    
+
     __uint8_t* tVector = byteDecode(segmentBytesArray(ekPKE, 0, 384*K), d);
-    __uint8_t* rho = segmentBytesArray(ekPKE, 384*K, 384*K + 32);
+
+
+    __uint8_t* rho;
+    __uint16_t sizeRho = 384*K;
+    segmentBytesArray(ekPKE, 384*K, 384*K + 32, rho, &sizeRho);
 
     __uint8_t n = 0;
 
@@ -467,7 +477,11 @@ __uint8_t PKE_Encrypt(__uint8_t *ekPKE, __uint8_t *m, __uint8_t *r, __uint8_t d)
     }
     for (int i = 0; i < K; i++) {
         for (int j = 0; j < K; j++) {
-            matrixAT[i*K + j] = sampleNTT(d); // d -> XOF(ρ,j,i)
+            __uint16_t sizeOutXOF = 0;
+            __uint8_t* outXOF;
+            XOF(rho, j, i, sizeRho, d, outXOF, &sizeOutXOF);
+            matrixAT[i*K + j] = sampleNTT(outXOF); // d -> XOF(ρ,j,i)
+            free(outXOF);
         }
     }
 
@@ -479,6 +493,7 @@ __uint8_t PKE_Encrypt(__uint8_t *ekPKE, __uint8_t *m, __uint8_t *r, __uint8_t d)
     }
     for (int i = 0; i < K; i++) {
         for (int j = 0; j < K; j++) {
+            __uint8_t* outNPF = NPF(r, 32, n, d, ETA_1, &n);
             vectorR[i] = samplePolyCBD(d, ETA_1); // d -> PRFη1 (r,N)
             n++;
         }
@@ -512,6 +527,39 @@ __uint8_t PKE_Encrypt(__uint8_t *ekPKE, __uint8_t *m, __uint8_t *r, __uint8_t d)
 
     return 1;
 
+}
+
+void XOF(__uint8_t *rho, __uint8_t i, __uint8_t j, __uint16_t sizeRho, __uint16_t d, __uint8_t* output,__uint16_t* sizeOut)
+{
+    __uint8_t* input1;
+    __uint16_t sizeInput1;
+    concatenateBytes(rho, &i, sizeRho, 1, input1, &sizeInput1);
+
+    __uint8_t* input2;
+    __uint16_t sizeInput2;
+    concatenateBytes(input1, &j, sizeInput1, 1, input2, &sizeInput2);
+
+    SHAKE_128(input2, sizeInput2, output, sizeOut);
+
+    free(input1);
+    free(input2);
+
+    return output;
+}
+
+__uint8_t* NPF(__uint8_t* r, __uint16_t sizeR, __uint8_t n, __uint16_t d, __uint8_t eta, __uint16_t* sizeOut)
+{
+    __uint8_t* input;
+    __uint16_t sizeInput; 
+    concatenateBytes(r, &n, sizeR, 1, input, &sizeInput);
+    
+    __uint8_t* output = (__uint8_t*)calloc(64*eta, sizeof(__uint8_t));
+
+    SHAKE_256(input, sizeR + 1, output, sizeOut);
+
+    free(input);
+    
+    return output;
 }
 
 __uint16_t **multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector){
@@ -584,26 +632,21 @@ __uint16_t* mulPoly(__uint16_t *poly1, __uint16_t *poly2) {
     }
     return product;
 }
-
-__uint8_t *concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2) {
+void* concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2, __uint8_t* nuwByteArray, __uint16_t* numBytes)
+{
     // Concatenates two byte arrays
 
-    __uint8_t *concBytes = (__uint8_t *)calloc(numBytes1 + numBytes2, sizeof(__uint8_t));
-    if (concBytes == NULL) {
-        fprintf(stderr, "Memory allocation error - contateBytes\n");
-        return NULL;
-    }
-    // concBytes = (byteArray1 << numBytes1) | byteArray2;
+    numBytes = numBytes1 + numBytes2;
 
-    for (int i = 0; i < numBytes1 + numBytes2; i++) {
+    nuwByteArray = (__uint8_t *)calloc(numBytes, sizeof(__uint8_t));
+
+    for (int i = 0; i < numBytes; i++) {
         if (i < numBytes1) {
-            concBytes[i] = byteArray1[i];
+            nuwByteArray[i] = byteArray1[i];
         }else {
-            concBytes[i] = byteArray2[i - numBytes1];
+            nuwByteArray[i] = byteArray2[i - numBytes1];
         }
     }
-
-    return concBytes;
 }
 
 
@@ -659,14 +702,14 @@ __uint8_t *copyBytesArray(__uint8_t *byteArray, __uint16_t numBytes) {
     return newByteArray;
 }
 
-__uint8_t *segmentBytesArray(__uint8_t *byteArray, __uint16_t start, __uint16_t end)
+void *segmentBytesArray(__uint8_t *byteArray, __uint16_t start, __uint16_t end, __uint8_t *newByteArray, __uint16_t* numBytes)
 {
-    __uint8_t *newByteArray = (__uint8_t *)calloc(end - start + 1, sizeof(__uint8_t));
+    // Extracts a segment of a byte array
 
-    for (int i = start; i == end; i++)
-    {
+    numBytes = end - start + 1;
+
+    for (int i = start; i < end; i++) {
         newByteArray[i - start] = byteArray[i];
     }
-
-    return newByteArray;
 }
+
