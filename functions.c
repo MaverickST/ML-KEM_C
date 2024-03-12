@@ -502,6 +502,23 @@ __uint8_t *PKE_Decrypt(__uint8_t *dkPKE, __uint8_t *cipherText) {
     return wEncoded;
 }
 
+struct Keys ML_KEM_KeyGen() {
+    struct Keys keysML_KEM;
+
+    // Random bytes 
+    __uint8_t* z = generateRandomBytes(1);
+
+    // PKE keys
+    struct Keys keysPKE = PKE_KeyGen();
+    keysML_KEM.ek = keysPKE.ek;
+
+    // Concatenation
+    __uint8_t* concat_dkPKE_ekMLKEM = concatenateBytes(keysPKE.dk, keysML_KEM.ek, 384*K, 384*K + 32);
+    // __uint8_t* concat_dK_ek_Hek = concatenateBytes(concat_dkPKE_ekMLKEM, SHA3_256(keysML_KEM.ek), 2*384*K + 32, 32);
+
+    return keysML_KEM;
+}
+
 __uint16_t *vectorDotProduct(__uint16_t **vector1, __uint16_t **vector2) {
     // Compute the vector dot product, and return a polynomial
 
