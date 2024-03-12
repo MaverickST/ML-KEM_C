@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "*.vhd": "shellscript",
+        "*.c": "c",
+        "utilities.h": "c",
+        "stdio.h": "c",
+        "stdint.h": "c",
+        "mappings.h": "c"
+    }
+}
