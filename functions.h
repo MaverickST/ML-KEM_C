@@ -33,53 +33,268 @@ struct Keys
     __uint8_t* dk;
 };
 
+// -----------------------------------------------------------------------------------------------------
+// ------------------------------------------ MAIN ALGORITHMS ------------------------------------------
+// -----------------------------------------------------------------------------------------------------
 
+/**
+ * @brief Aglorithm 2: Converts a bit string (of length a multiple of eight) into an array of bytes.
+ * 
+ * @param bitArray 
+ * @param numBits 
+ * @return __uint8_t* 
+ */
 __uint8_t* bitsToBytes(__uint32_t* bitArray, __uint16_t numBits);
-__uint32_t* bytesToBits(__uint8_t* bytesArray, __uint16_t numBytes);
-__uint16_t rounding(struct rational num);
-__uint16_t compress(__uint16_t numMod_d, __uint8_t d);
-__uint16_t decompress(__uint16_t numMod_2d, __uint8_t d);
 
+/**
+ * @brief Algorithm 3: Performs the inverse of BitsToBytes, converting a byte array into a bit array.
+ * 
+ * @param bytesArray 
+ * @param numBytes 
+ * @return __uint32_t* 
+ */
+__uint32_t* bytesToBits(__uint8_t* bytesArray, __uint16_t numBytes);
+
+/**
+ * @brief Algorithm 4: Encodes an array of 256 d-bit integers (polynomial) into a byte array, for 1 ≤ d ≤ 12.
+ * 
+ * @param F Polynomial
+ * @param d 
+ * @return __uint8_t* byte array of size 32*d
+ */
 __uint8_t* byteEncode(__uint16_t* F, __uint8_t d);
+
+/**
+ * @brief Algorithm 5: Decodes a byte array into an array of d-bit integers, for 1 ≤ d ≤ 12.
+ * 
+ * @param byteArray array of 32*d bytes
+ * @param d 
+ * @return __uint16_t* 256 d-bit integers
+ */
 __uint16_t* byteDecode(__uint8_t* byteArray, __uint8_t d);
 
-// Algorithm 6: SampleNTT
+/**
+ * @brief Algorithm 6: If the input is a stream of uniformly random bytes, 
+ * the output is a uniformly random element of Tq
+ * 
+ * @param byteArray stream of bytes.
+ * @return __uint16_t* 256 integers mod Q.
+ */
 __uint16_t* sampleNTT(__uint8_t* byteArray);
-// Algorithm 7: SamplePolyCBDη
+
+/**
+ * @brief Algorithm 7: If the input is a stream of uniformly random bytes, 
+ * outputs a sample from the distribution Dη (Rq)
+ * 
+ * @param byteArray array of 64*eta bytes
+ * @param eta 
+ * @return __uint16_t* 256 integers mod Q.
+ */
 __uint16_t* samplePolyCBD(__uint8_t* byteArray, __uint8_t eta);
-// Algorithm 8: NTT
+
+/**
+ * @brief Algorithm 8: Numeric-Theoretic Transform
+ * Computes the NTT representation fˆ of the given polynomial f ∈ Rq.
+ * 
+ * @param polyF the coeffcients of the input polynomial
+ * @return __uint16_t* the coeffcients of the NTT of the input polynomial
+ * @note Input and output parameters are 256 integers mod Q.
+ */
 __uint16_t* NTT(__uint16_t* polyF);
-// Algorithm 9: Inverse NTT
+
+/**
+ * @brief Algorithm 9: Inverse NTT
+ * Computes the polynomial f ∈ Rq corresponding to the given NTT representation fˆ ∈ Tq.
+ * 
+ * @param polyNTT the coeffcients of input NTT representation
+ * @return __uint16_t* the coeffcients of the inverse-NTT of the input
+ * @note Input and output parameters are 256 integers mod Q.
+ */
 __uint16_t* inverseNTT(__uint16_t* polyNTT);
-// Algorithm 10: Multiply NTT
+
+/**
+ * @brief Algorithm 10: Computes the product (in the ring Tq) of two NTT representations.
+ * 
+ * @param polyNTT1 
+ * @param polyNTT2 
+ * @return __uint16_t* 
+ * @note Input and output parameters are 256 integers mod Q.
+ */
 __uint16_t* multiplyNTT(__uint16_t* polyNTT1, __uint16_t* polyNTT2);
-// Algorithm 11: Base case multiply
+
+/**
+ * @brief Computes the product of two degree-one polynomials with respect to a quadratic modulus.
+ * 
+ * @param a0 
+ * @param a1 
+ * @param b0 
+ * @param b1 
+ * @param gamma value of an array pre-calculated
+ * @return __uint16_t 
+ */
 __uint16_t baseCaseMultiplyC0(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1, __uint16_t gamma);
 __uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1);
-// Algorithm 12: K-PKE.KeyGen()
+
+/**
+ * @brief Algorithm 12: Generates an encryption key and a corresponding decryption key.
+ * 
+ * @return struct Keys which containt ek and dk keys.
+ * @note ek is an array of 384*K + 32 bytes.
+ * @note dk is an array of 384*K bytes.
+ */
 struct Keys PKE_KeyGen();
-//algorithm 13: K-PKE.Encrypt()
-__uint8_t PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r, __uint8_t d);
+
+
 
 __uint8_t* XOF(__uint8_t *rho, __uint8_t i, __uint8_t j, __uint16_t sizeRho, __uint16_t d, __uint16_t* sizeOut);
 __uint8_t* NPF(__uint8_t* r, __uint16_t sizeR, __uint8_t n, __uint16_t d, __uint8_t eta, __uint16_t* sizeOut);
 
-__uint8_t* vector2Bytes(__uint16_t** vector, __uint16_t numBytes);
-__uint16_t** multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector);
-__uint16_t** sumVector(__uint16_t** vector1, __uint16_t** vector2);
-__uint16_t* sumPoly(__uint16_t* poly1, __uint16_t* poly2);
-__uint16_t* mulPoly(__uint16_t* poly1, __uint16_t* poly2);
-void* concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2, __uint8_t* nuwByteArray, __uint16_t* numBytes);
 
-__uint8_t bitRev7(__uint8_t i);
-// Modular arithmetic functions
+/**
+ * @brief Algorithm 14: Uses the decryption key to decrypt a ciphertext.
+ * 
+ * @param dkPKE array of 384*K bytes
+ * @param cipherText array of 32*(d_u*K + d_v) bytes
+ * @return __uint8_t* array of 32 bytes
+ */
+__uint8_t PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r, __uint8_t d);
+//__uint8_t* PKE_Decrypt(__uint8_t* dkPKE, __uint8_t* cipherText);
+
+
+// ---------------------------------------------------------------------------------
+// -------------------------------- SOPPORT FUNCTIONS ------------------------------
+// ---------------------------------------------------------------------------------
+
+/**
+ * @brief Round a rational number to the nearest integer
+ * 
+ * @param num is a rational number, a structure
+ * @return __uint16_t 
+ */
+__uint16_t rounding(struct rational num);
+/**
+ * @brief Compress a integer mod Q into a integer mod 2^d
+ * 
+ * @param numMod_d integer mod Q
+ * @param d 
+ * @return __uint16_t 
+ */
+__uint16_t compress(__uint16_t numMod_d, __uint8_t d);
+/**
+ * @brief Decompress a integer mod 2^d into a integer mod Q
+ * 
+ * @param numMod_2d integer mod 2^d
+ * @param d 
+ * @return __uint16_t integer mod Q
+ */
+__uint16_t decompress(__uint16_t numMod_2d, __uint8_t d);
+
+/**
+ * @brief Compute the dot product of two vectors. 
+ * 
+ * @param vector1 K-polynomials
+ * @param vector2 K-polynomials
+ * @return __uint16_t* 256 integers mod Q
+ */
+__uint16_t* vectorDotProduct(__uint16_t** vector1, __uint16_t** vector2);
+
+/**
+ * @brief Convert a vector of K polynomials into an array of the speficied number of bytes
+ * 
+ * @param vector K-polynomials
+ * @param numBytes number of bytes to convert the vector
+ * @return __uint8_t* array of numBytes bytes
+ */
+
+__uint8_t* vector2Bytes(__uint16_t** vector, __uint16_t numBytes);
+
+/**
+ * @brief Computes de multiplication between a matrix of K*K pylimomials and a vector of K pylimomials
+ * 
+ * @param matrix K*K-polynomials matrix
+ * @param vector K-polynomials vector
+ * @return __uint16_t** the result is a K-polynomials vector
+ */
+__uint16_t** multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector);
+
+/**
+ * @brief Computes the sum of two vectors
+ * 
+ * @param vector1 K-polynomials vector
+ * @param vector2 K-polynomials vector
+ * @return __uint16_t** another K polynomials vector
+ */
+__uint16_t** sumVector(__uint16_t** vector1, __uint16_t** vector2);
+
+/**
+ * @brief Computes de sum of two polynomials.
+ * 
+ * @param poly1 
+ * @param poly2 
+ * @return __uint16_t* 
+ * @note Input and output are 256 integers mod Q (polynomials).
+ */
+__uint16_t* sumPoly(__uint16_t* poly1, __uint16_t* poly2);
+
+__uint16_t* mulPoly(__uint16_t* poly1, __uint16_t* poly2);
+
+
+/**
+ * @brief Compute the cancatenation of two byte arrays: byteArray1 || byteArray2
+ * 
+ * @param byteArray1 
+ * @param byteArray2 
+ * @param numBytes1 
+ * @param numBytes2 
+ * @return __uint8_t* 
+ */
+  void* concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2, __uint8_t* nuwByteArray, __uint16_t* numBytes);
+
+/**
+ * @brief Aply the conditional reduction to integers mod Q
+ * 
+ * @param a 
+ * @return __uint16_t 
+ */
 __uint16_t conditionalReduce(__uint16_t a);
+
+/**
+ * @brief Implement the Barrett reduction algorithm to do a multiplication between 12-bit integers.
+ * 
+ * @param a 
+ * @return __uint16_t 
+ */
 __uint16_t reduceBarrett(__uint32_t a);
+
+/**
+ * @brief Modular sum between two integers mod Q.
+ * 
+ * @param a integer mod Q.
+ * @param b integer mod Q.
+ * @return __uint16_t 
+ */
 __uint16_t addModq(__uint16_t a, __uint16_t b);
+
+/**
+ * @brief Modular substraction between two integers mod Q.
+ * 
+ * @param a integer mod Q.
+ * @param b integer mod Q.
+ * @return __uint16_t 
+ */
 __uint16_t subModq(__uint16_t a, __uint16_t b);
+
+/**
+ * @brief Computes the modular multiplication between two integers mod Q using Barret Algorithm.
+ * 
+ * @param a integer mod Q.
+ * @param b integer mod Q.
+ * @return __uint16_t 
+ */
 __uint16_t mulModq(__uint16_t a, __uint16_t b);
 
 __uint8_t* generateRandomBytes(__uint8_t d);
+void freeVector(__uint16_t **vector, __uint8_t sizeK);
 
 __uint8_t* copyBytesArray(__uint8_t* byteArray, __uint16_t numBytes);
 void *segmentBytesArray(__uint8_t *byteArray, __uint16_t start, __uint16_t end, __uint8_t *newByteArray, __uint16_t* numBytes)

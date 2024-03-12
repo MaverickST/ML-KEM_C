@@ -230,12 +230,34 @@ void runTestMultiplyNTT(){
     free(product);
 }
 
-void runTestMultiplySumPoly() {
+void runTestPKE_Decrypt() {
+
+    // Testing PKE_Decrypt
+    __uint8_t* dkPKE = generateRandomBytes(12*K);
+    __uint8_t* cipherText = generateRandomBytes(D_u*K + D_v);
+    __uint8_t* m = PKE_Decrypt(dkPKE, cipherText);
+
+    // Printing
+    printf("dkPKE: \n");
+    printBytesHex(dkPKE, 12*K);
+
+    printf("cipherText: \n");
+    printBytesHex(cipherText, D_u*K + D_v);
+
+    printf("m: \n");
+    printBytesHex(m, 1);
+
+    // free memory
+    free(dkPKE);
+    free(cipherText);
+    free(m);
+}
+
+void runTestSumPoly() {
 
     __uint16_t* poly1 = generateRandomPoly(Q);
     __uint16_t* poly2 = generateRandomPoly(Q);
     __uint16_t* sum = sumPoly(poly1, poly2);
-    __uint16_t* product = mulPoly(poly1, poly2);
 
     printf("Poly1: \n");
     printPoly(poly1);
@@ -246,13 +268,9 @@ void runTestMultiplySumPoly() {
     printf("Sum: \n");
     printPoly(sum);
 
-    printf("Product: \n");
-    printPoly(product);
-
     free(poly1);
     free(poly2);
     free(sum);
-    free(product);
 }
 
 void runTestMatrixVectorOperations() {
@@ -340,6 +358,7 @@ void runtTestConcatenateBytes(__uint8_t a, __uint8_t b) {
 }
 
 void runTestVector2Bytes() {
+    // Make a random test to vector2Bytes function
 
     __uint8_t* ekPKE;
     __uint8_t* dkPKE;
@@ -393,6 +412,31 @@ void runTestVector2Bytes() {
     free(dkPKE);
 }
 
+void runTestVectorDotProduct() {
+    // Test the function vectorDotProduct
+
+    printf("Vector 1: \n");
+    __uint16_t** vector1 = (__uint16_t**)calloc(K, sizeof(__uint16_t*));
+    for (int i = 0; i < K; i++) {
+        vector1[i] = generateRandomPoly(Q);
+        printPoly(vector1[i]);
+    }
+    printf("Vector 2: \n");
+    __uint16_t** vector2 = (__uint16_t**)calloc(K, sizeof(__uint16_t*));
+    for (int i = 0; i < K; i++) {
+        vector2[i] = generateRandomPoly(Q);
+        printPoly(vector2[i]);
+    }
+
+    printf("Vector 1 dot Vector 2: \n");
+    __uint16_t* result = vectorDotProduct(vector1, vector2);
+    printPoly(result);
+
+    freeVector(vector1, K);
+    freeVector(vector2, K);
+    free(result);
+}
+
 __uint16_t* generateRandomPoly(__uint16_t mod){
     
     // Generate 256 random integers mod q (o any number)
@@ -413,6 +457,13 @@ void printPoly(__uint16_t* poly){
 void printBytes(__uint8_t* byteArray, __uint8_t d){
     for (int i = 0; i < 32*d; i++) {
         printf("%d ", byteArray[i]);
+    }
+    printf("\n");
+}
+
+void printBytesHex(__uint8_t *byteArray, __uint8_t d) {
+    for (int i = 0; i < 32*d; i++) {
+        printf("%02x ", byteArray[i]);
     }
     printf("\n");
 }

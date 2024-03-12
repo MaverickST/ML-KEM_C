@@ -2,21 +2,6 @@
 #include "test.h"
 #include "arrays.h"
 
-__uint8_t bitRev7(__uint8_t i){
-
-    printf("Zeta [%d]: %d\n", i, zetaArray[i]);
-    printf("Gamma [%d]: %d\n", i, gammaArray[i]);
-
-    // Reverse input 7-bits
-    __uint8_t res = 0;
-    for(int j = 6; j >= 0; j--){
-        res |= (i & 1) << j;
-        i >>= 1;
-    }
-
-    return res;
-}
-
 __uint8_t* bitsToBytes(__uint32_t* bitArray, __uint16_t numBits) {
     //Converts a bit array (of length a multiple of eight) into an array of bytes.
   
@@ -186,7 +171,8 @@ __uint16_t* sampleNTT(__uint8_t* byteArray){
         return NULL;
     }
 
-    int i = 0, j = 0, d1, d2;
+    int i = 0, j = 0;
+    __uint16_t d1, d2;
     while(j < 256){
         d1 = byteArray[i] + 256*(byteArray[i + 1]%16);
         d2 = byteArray[i + 1]>>4 + 16*byteArray[i + 2];
@@ -321,7 +307,7 @@ __uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uin
     return c1;
 }
 
-struct Keys PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
+struct Keys PKE_KeyGen() {
     // Generates an encryption key and a corresponding decryption key
     __uint8_t* d = generateRandomBytes(1);
 
@@ -397,45 +383,145 @@ struct Keys PKE_KeyGen(__uint8_t* ekPKE, __uint8_t* dkPKE) {
 
     keysPKE.dk = vector2Bytes(vectorS_NTT, 384*K);
 
-    // Free matrix elements from memory
-    for(int i = 0; i < K*K; i++) {
-        free(matrixA[i]);
-    }
-    free(matrixA);
-
-    for(int i = 0; i < K; i++) {
-        free(vectorS[i]);
-    }
-    free(vectorS);
-
-    for(int i = 0; i < K; i++) {
-        free(vectorE[i]);
-    }
-    free(vectorE);
-
-    for(int i = 0; i < K; i++) {
-        free(vectorT_NTT[i]);
-    }
-    free(vectorT_NTT);
-
-    for(int i = 0; i < K; i++) {
-        free(vectorS_NTT[i]);
-    }
-    free(vectorS_NTT);
-
-    for(int i = 0; i < K; i++) {
-        free(vectorE_NTT[i]);
-    }
-    free(vectorE_NTT);
+    // Free each variable from memory
+    freeVector(matrixA, K*K);
+    freeVector(vectorS, K);
+    freeVector(vectorE, K);
+    freeVector(vectorT_NTT, K);
+    freeVector(vectorS_NTT, K);
+    freeVector(vectorE_NTT, K);
 
     return keysPKE;
+}
+
+__uint8_t *PKE_Decrypt(__uint8_t *dkPKE, __uint8_t *cipherText) {
+
+
+    // Segmentation
+    __uint8_t c1[32*D_u*K];
+    __uint8_t c2[32*D_v];
+    for(int i = 0; i < 32*(D_u*K + D_v); i++) {
+        if (i < 32*D_u*K) {
+            c1[i] = cipherText[i];
+        }else {
+            c2[i - 32*D_u*K] = cipherText[i];
+        }
+    }
+
+    // Initilization of u vector
+    __uint16_t **vectorU = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (vectorU == NULL) {
+        fprintf(stderr, "Memory allocation error - PKE_Decrypt\n");
+        return NULL;
+    }
+    for (int i = 0; i < K; i++) {
+        vectorU[i] = (__uint16_t *)calloc(256, sizeof(__uint16_t));
+        if (vectorU[i] == NULL) {
+            fprintf(stderr, "Memory allocation error - PKE_Decrypt\n");
+            return NULL;
+        }
+    }
+    // Decompressing and decoding c1. Generate the vectorU, which is K polynomials.
+    for (int i = 0; i < K; i++) {
+        // Get K packets of 32*D_u bytes
+        __uint8_t ci[32*D_u];
+        for (int j = 0; j < 32*D_u; j++) {
+            ci[j] = c1[32*D_u*i + j];
+        }
+        // Decode the byte array into 256 integers mod 2^D_u.
+        __uint16_t* c1Decoded = byteDecode(ci, D_u);
+        for (int j = 0; j < 256; j++) {
+            vectorU[i][j] = decompress(c1Decoded[j], D_u);
+        }
+        free(c1Decoded);
+    }
+
+    // Decompressing and decoding c2, which generates v
+    __uint16_t v[256];
+    __uint16_t* c2Decoded = byteDecode(c2, D_v);
+    for (int i = 0; i < 256; i++) {
+        v[i] = decompress(c2Decoded[i], D_v);
+    }
+    free(c2Decoded);
+
+    // Initialization of s vector
+    __uint16_t **vectorS_NTT = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (vectorS_NTT == NULL) {
+        fprintf(stderr, "Memory allocation error - PKE_Decrypt\n");
+        return NULL;
+    }
+    for (int i = 0; i < K; i++) {
+        vectorS_NTT[i] = (__uint16_t *)calloc(256, sizeof(__uint16_t));
+        if (vectorS_NTT[i] == NULL) {
+            fprintf(stderr, "Memory allocation error - PKE_Decrypt\n");
+            return NULL;
+        }
+    }
+
+    // Decoding dkPKE
+    __uint8_t d = 12;
+    for (int i = 0; i < K; i++) {
+        // Get K packets of 32*d bytes
+        __uint8_t dkPKE_i[32*d];
+        for (int j = 0; j < 32*d; j++) {
+            dkPKE_i[j] = dkPKE[32*d*i + j];
+        }
+        // Decode the byte array into 256 integers mod 2^d (Q).
+        __uint16_t* dkPKEDecoded = byteDecode(dkPKE_i, d);
+        for (int j = 0; j < 256; j++) {
+            vectorS_NTT[i][j] = dkPKEDecoded[j];
+        }
+        free(dkPKEDecoded);
+    }
+
+    // Generation w
+    __uint16_t** vectorU_NTT = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    for (int i = 0; i < K; i++) {
+        vectorU_NTT[i] = NTT(vectorU[i]);
+    }
+    __uint16_t* resultDot_NTT = vectorDotProduct(vectorS_NTT, vectorU_NTT);
+    __uint16_t* resultDot = inverseNTT(resultDot_NTT);
+    __uint16_t w[256];
+    for (int i = 0; i < 256; i++) {
+        w[i] = subModq(v[i], resultDot[i]);
+    }
+
+    // Compressing and encoding w.
+    for (int i = 0; i < 256; i++) {
+        w[i] = compress(w[i], 1);
+    }
+    __uint8_t* wEncoded = byteEncode(w, 1);
+
+    // Free each dinamic variable.
+    freeVector(vectorU, K);
+    freeVector(vectorS_NTT, K);
+    freeVector(vectorU_NTT, K);
+    free(resultDot_NTT);
+    free(resultDot);
+
+    return wEncoded;
+}
+
+__uint16_t *vectorDotProduct(__uint16_t **vector1, __uint16_t **vector2) {
+    // Compute the vector dot product, and return a polynomial
+
+    __uint16_t *result = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+    for (int i = 0; i < K; i++) {
+        // Multiply each polynomial of the vectors input
+        __uint16_t *resultMulPoly = multiplyNTT(vector1[i], vector2[i]);
+        for (int j = 0; j < 256; j++) {
+            result[j] = addModq(result[j], resultMulPoly[j]);
+        }
+        free(resultMulPoly);
+    }
+    return result;
 }
 
 
 __uint8_t *vector2Bytes(__uint16_t **vector, __uint16_t numBytes)
 {
 
-    __uint8_t* byteArray = (__uint8_t*)calloc(numBytes, sizeof(__uint8_t));
+    __uint8_t *byteArray = (__uint8_t *)calloc(numBytes, sizeof(__uint8_t));
 
     for (int i = 0; i < K; i++) {
         // Encode polynomial
@@ -564,6 +650,7 @@ __uint8_t* NPF(__uint8_t* r, __uint16_t sizeR, __uint8_t n, __uint16_t d, __uint
 
 __uint16_t **multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector){
 
+
     __uint16_t **product = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
     if (product == NULL) {
         fprintf(stderr, "Memory allocation error - multiplyMatrixByVector\n");
@@ -620,6 +707,7 @@ __uint16_t* sumPoly(__uint16_t* poly1, __uint16_t* poly2) {
     return sum;
 }
 
+
 __uint16_t* mulPoly(__uint16_t *poly1, __uint16_t *poly2) {
 
     __uint16_t *product = (__uint16_t *)calloc(256, sizeof(__uint16_t));
@@ -649,9 +737,7 @@ void* concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t 
     }
 }
 
-
 __uint16_t reduceBarrett(__uint32_t aMul) {
-    // Implement the Barrett reduction algorithm to do a multiplication between 12-bit integers.
     __uint32_t t = ((__uint64_t)aMul*(__uint64_t)r_BARRETT) >> (2*k_BARRETT); // Generate a 13-bit integer
     t = aMul - t*Q;
     return conditionalReduce((__uint16_t)t);
@@ -689,6 +775,13 @@ __uint8_t* generateRandomBytes(__uint8_t d){
     }
 
     return byteArray;
+}
+
+void freeVector(__uint16_t **vector, __uint8_t sizeK) {
+    for (int i = 0; i < sizeK; i++) {
+        free(vector[i]);
+    }
+    free(vector);
 }
 
 __uint8_t *copyBytesArray(__uint8_t *byteArray, __uint16_t numBytes) {
