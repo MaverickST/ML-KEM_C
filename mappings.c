@@ -179,7 +179,7 @@ void rcConstants(void)
 	printf("{ ");
 	for (uint8_t i=0;i<nr;i++)
 	{
-		printf("%lluULL,",vRC[i]);
+		printf("%lluULL,",(long long unsigned int)vRC[i]);
 		if (((i+1)%8)==0)
 			printf("\n");
 	}

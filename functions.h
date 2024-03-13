@@ -15,6 +15,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "utilities.h"
+#include "mappings.h"
 
 #define k_BARRETT 12     // k = log2(q)
 #define r_BARRETT 5039   // r = 4^k/q
@@ -159,6 +161,24 @@ __uint8_t* PKE_Decrypt(__uint8_t* dkPKE, __uint8_t* cipherText);
  * @note decapsulation key (dk) is an array of 768*K + 96 bytes
  */
 struct Keys ML_KEM_KeyGen();
+
+/**
+ * @brief Algorithm 16: Uses the encapsulation key to generate a shared key and an associated ciphertext.
+ * 
+ * @param ekML 384*K+32 bytes array
+ * @return __uint8_t* concatenation of the Shared key k (32 bytes array) 
+ * and c the cipher text(32*(d_u*K + d_v) bytes array)
+ */
+__uint8_t* ML_KEM_Encaps(__uint8_t* ekML);
+
+/**
+ * @brief Algorithm 17: Uses the decapsulation key to produce a shared key from a ciphertext.
+ * 
+ * @param cipherText 32*(d_u*K + d_v) bytes array. Ciphertext.
+ * @param dkML decapsulation key (768*K + 96 bytes array)
+ * @return __uint8_t* shared key k (32 bytes array)
+ */
+__uint8_t* ML_KEM_Decaps(__uint8_t* cipherText, __uint8_t* dkML);
 
 // ---------------------------------------------------------------------------------
 // -------------------------------- SOPPORT FUNCTIONS ------------------------------

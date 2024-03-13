@@ -512,11 +512,116 @@ struct Keys ML_KEM_KeyGen() {
     struct Keys keysPKE = PKE_KeyGen();
     keysML_KEM.ek = keysPKE.ek;
 
+    // Hash of ek -> H(ek)
+    __uint8_t Hek[32];
+    SHA3_256(keysML_KEM.ek, 384*K + 32, Hek);
+
     // Concatenation
     __uint8_t* concat_dkPKE_ekMLKEM = concatenateBytes(keysPKE.dk, keysML_KEM.ek, 384*K, 384*K + 32);
-    // __uint8_t* concat_dK_ek_Hek = concatenateBytes(concat_dkPKE_ekMLKEM, SHA3_256(keysML_KEM.ek), 2*384*K + 32, 32);
+    __uint8_t* concat_dK_ek_Hek = concatenateBytes(concat_dkPKE_ekMLKEM, Hek, 2*384*K + 32, 32);
+    keysML_KEM.dk = concatenateBytes(concat_dK_ek_Hek, z, 2*384*K + 32 + 32, 32);
+    
+    // Free each dinamic variable.
+    free(concat_dkPKE_ekMLKEM);
+    free(concat_dK_ek_Hek);
 
     return keysML_KEM;
+}
+
+__uint8_t* ML_KEM_Encaps(__uint8_t *ekML) {
+
+    // Random bytes
+    __uint8_t* m = generateRandomBytes(1);
+
+    // Hashes generation: G(m ∥ H(ek))
+    __uint8_t Hek[32];
+    __uint8_t r[32];
+    __uint8_t k[32];
+    __uint8_t K_r[64];
+
+    SHA3_256(ekML, 384*K + 32, Hek); // H(ek)
+    __uint8_t* concat_m_Hek = concatenateBytes(m, Hek, 32, 32);
+    SHA3_512(concat_m_Hek, 64, K_r); // (K,r) ← G(m∥H(ek))
+
+    // Split K_r into k and r
+    for (int i = 0; i < 32; i++) {
+        k[i] = K_r[i];
+        r[i] = K_r[i + 32];
+    }
+
+    // Encrpting m and concatenation.
+    __uint8_t* c = PKE_Encrypt(ekML, m, r);
+    __uint8_t* K_c = concatenateBytes(k, c, 32, 32*(D_u*K + D_v));
+
+    // Free each dinamic variable.
+    free(concat_m_Hek);
+
+    return K_c;
+
+}
+
+__uint8_t *ML_KEM_Decaps(__uint8_t *cipherText, __uint8_t *dkML) {
+
+    // Getting dkPKE, ekPKE, h and z from dkML
+    __uint8_t dkPKE[384*K];
+    __uint8_t ekPKE[384*K + 32];
+    __uint8_t h[32];
+    __uint8_t z[32];
+
+    for (int i = 0; i < 768*K + 96; i++) {
+        if (i < 384*K) {
+            dkPKE[i] = dkML[i];
+        }else if (i < 768*K + 32){
+            ekPKE[i - 384*K] = dkML[i];
+        }else if (i < 768*K + 64){
+            h[i - 768*K] = dkML[i];
+        }else {
+            z[i - 768*K - 32] = dkML[i];
+        }
+    }
+    // Decryption
+    __uint8_t* mp = PKE_Decrypt(dkPKE, cipherText);
+
+    // Concatenation
+    __uint8_t* mp_h = concatenateBytes(mp, h, 32, 32);
+    __uint8_t* z_c = concatenateBytes(z, cipherText, 32, 32*(D_u*K + D_v));
+
+    // Hashes
+    __uint8_t Kp_rp[64];
+    SHA3_512(mp_h, 64, Kp_rp); // (K',r') ← G(m'∥h)
+
+    __uint8_t K_[32];
+    SHAKE_256(z_c, 32*(D_u*K + D_v), K_, 32); // K¯ ← J(z∥c,32)
+
+    // Split Kp_rp into K' and r'
+    __uint8_t Kp[32];
+    __uint8_t rp[32];
+    for (int i = 0; i < 32; i++) {
+        Kp[i] = Kp_rp[i];
+        rp[i] = Kp_rp[i + 32];
+    }
+
+    // Encryption
+    __uint8_t* cp = PKE_Encrypt(ekPKE, mp, rp); 
+
+    // Implicit rejection
+    for (int i = 0; i < 32*(D_u*K + D_v); i++) {
+        if (cipherText[i] != cp[i]) {
+            // cipherText and cp are different, copy K_ into Kp	
+            for (int j = 0; j < 32; j++) {
+                Kp[j] = K_[j];
+            }
+        }
+    }
+
+    // Free each dinamic variable.
+    free(mp);
+    free(mp_h);
+    free(z_c);
+    free(cp);
+
+    return Kp;
+
 }
 
 __uint16_t *vectorDotProduct(__uint16_t **vector1, __uint16_t **vector2) {
