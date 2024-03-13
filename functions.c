@@ -459,15 +459,18 @@ __uint8_t PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r, __uint8_t d)
     __uint16_t sizeM = 32;
     __uint16_t sizeR = 32;
     
-
-    __uint8_t* tVector = byteDecode(segmentBytesArray(ekPKE, 0, 384*K), d);
-
-
-    __uint8_t* rho;
-    __uint16_t sizeRho = 384*K;
-    segmentBytesArray(ekPKE, 384*K, 384*K + 32, rho, &sizeRho);
-
     __uint8_t n = 0;
+
+    __uint16_t sizeInByteD_vT = 0;
+    __uint8_t* inByteDT_vT = segmentBytesArray(ekPKE, 0, 384*K, &sizeInByteD_vT);
+    __uint8_t* vectorT = byteDecode(inByteDT_vT, d);
+    free(inByteDT_vT);
+
+
+    
+    __uint16_t sizeRho = 0;
+    __uint8_t* rho = segmentBytesArray(ekPKE, 384*K, 384*K + 32, &sizeRho);
+
 
     // Generates a KxK matrix of polynomials (in NTT domain) mod q
     __uint16_t** matrixAT = (__uint16_t **)calloc(K*K, sizeof(__uint16_t *));
@@ -478,9 +481,8 @@ __uint8_t PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r, __uint8_t d)
     for (int i = 0; i < K; i++) {
         for (int j = 0; j < K; j++) {
             __uint16_t sizeOutXOF = 0;
-            __uint8_t* outXOF;
-            XOF(rho, j, i, sizeRho, d, outXOF, &sizeOutXOF);
-            matrixAT[i*K + j] = sampleNTT(outXOF); // d -> XOF(ρ,j,i)
+            __uint8_t* outXOF = XOF(rho, i, j, sizeRho, &sizeOutXOF); // XOF(ρ,j,i)
+            matrixAT[j*K + i] = sampleNTT(outXOF); 
             free(outXOF);
         }
     }
@@ -493,8 +495,10 @@ __uint8_t PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r, __uint8_t d)
     }
     for (int i = 0; i < K; i++) {
         for (int j = 0; j < K; j++) {
-            __uint8_t* outNPF = NPF(r, 32, n, d, ETA_1, &n);
-            vectorR[i] = samplePolyCBD(d, ETA_1); // d -> PRFη1 (r,N)
+            __uint16_t sizeOutPRF = 0;
+            __uint8_t* outPRF = PRF(r, sizeR, n, ETA_1, &sizeOutPRF); // PRF(r,n,η1)
+            vectorR[i] = samplePolyCBD(outPRF, ETA_1);
+            free(outPRF);
             n++;
         }
     }
@@ -506,11 +510,18 @@ __uint8_t PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r, __uint8_t d)
         return;
     }
     for (int i = 0; i < K; i++) {
-        vectorE1[i] = samplePolyCBD(d, ETA_2); // d -> PRFη1 (r,N)
+        __uint16_t sizeOutPRF = 0;
+        __uint8_t* outPRF = PRF(r, sizeR, n, ETA_2, &sizeOutPRF); // PRF(r,n,η2)
+        vectorE1[i] = samplePolyCBD(outPRF, ETA_2);
+        free(outPRF);
         n++;
     }
 
-    __uint16_t* vectorE2 = samplePolyCBD(d, ETA_2); // d -> PRFη2 (r,N)
+    // e2
+    __uint16_t sizeOutPRF = 0;
+    __uint16_t* outPRF = PRF(r, sizeR, n, ETA_2, &sizeOutPRF); // PRF(r,n,η2)
+    __uint16_t* vectorE2 = samplePolyCBD(outPRF, ETA_2);
+    free(outPRF);
 
     // r vector in NTT domain
     __uint16_t** vectorR_NTT = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
@@ -529,15 +540,16 @@ __uint8_t PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r, __uint8_t d)
 
 }
 
-void XOF(__uint8_t *rho, __uint8_t i, __uint8_t j, __uint16_t sizeRho, __uint16_t d, __uint8_t* output,__uint16_t* sizeOut)
+__uint8_t* XOF(__uint8_t* rho, __uint8_t i, __uint8_t j, __uint16_t sizeRho, __uint16_t* sizeOut)
 {
-    __uint8_t* input1;
     __uint16_t sizeInput1;
-    concatenateBytes(rho, &i, sizeRho, 1, input1, &sizeInput1);
+    __uint8_t* input1 = concatenateBytes(rho, &i, sizeRho, 1, &sizeInput1);
 
-    __uint8_t* input2;
     __uint16_t sizeInput2;
-    concatenateBytes(input1, &j, sizeInput1, 1, input2, &sizeInput2);
+    __uint8_t* input2 = concatenateBytes(input1, &j, sizeInput1, 1, &sizeInput2);
+
+    sizeOut = 32;
+    __uint8_t* output = (__uint8_t*)calloc(sizeOut, sizeof(__uint8_t));
 
     SHAKE_128(input2, sizeInput2, output, sizeOut);
 
@@ -547,15 +559,16 @@ void XOF(__uint8_t *rho, __uint8_t i, __uint8_t j, __uint16_t sizeRho, __uint16_
     return output;
 }
 
-__uint8_t* NPF(__uint8_t* r, __uint16_t sizeR, __uint8_t n, __uint16_t d, __uint8_t eta, __uint16_t* sizeOut)
+__uint8_t* PRF(__uint8_t* r, __uint16_t sizeR, __uint8_t n, __uint8_t eta, __uint16_t* sizeOut)
 {
-    __uint8_t* input;
-    __uint16_t sizeInput; 
-    concatenateBytes(r, &n, sizeR, 1, input, &sizeInput);
     
-    __uint8_t* output = (__uint8_t*)calloc(64*eta, sizeof(__uint8_t));
+    __uint16_t sizeInput; 
+    __uint8_t* input = concatenateBytes(r, &n, sizeR, 1, &sizeInput);
+    
+    sizeOut = 64*eta;
+    __uint8_t* output = (__uint8_t*)calloc(sizeOut, sizeof(__uint8_t));
 
-    SHAKE_256(input, sizeR + 1, output, sizeOut);
+    SHAKE_256(input, sizeInput, output, sizeOut);
 
     free(input);
     
@@ -632,13 +645,13 @@ __uint16_t* mulPoly(__uint16_t *poly1, __uint16_t *poly2) {
     }
     return product;
 }
-void* concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2, __uint8_t* nuwByteArray, __uint16_t* numBytes)
+__uint8_t* concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2, __uint16_t* numBytes)
 {
     // Concatenates two byte arrays
 
     numBytes = numBytes1 + numBytes2;
 
-    nuwByteArray = (__uint8_t *)calloc(numBytes, sizeof(__uint8_t));
+    __uint8_t* nuwByteArray = (__uint8_t *)calloc(numBytes, sizeof(__uint8_t));
 
     for (int i = 0; i < numBytes; i++) {
         if (i < numBytes1) {
@@ -647,6 +660,8 @@ void* concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t 
             nuwByteArray[i] = byteArray2[i - numBytes1];
         }
     }
+
+    return nuwByteArray;
 }
 
 
@@ -702,14 +717,20 @@ __uint8_t *copyBytesArray(__uint8_t *byteArray, __uint16_t numBytes) {
     return newByteArray;
 }
 
-void *segmentBytesArray(__uint8_t *byteArray, __uint16_t start, __uint16_t end, __uint8_t *newByteArray, __uint16_t* numBytes)
+__uint8_t* segmentBytesArray(__uint8_t *byteArray, __uint16_t start, __uint16_t end, __uint16_t* numBytes)
 {
     // Extracts a segment of a byte array
 
     numBytes = end - start + 1;
 
+
+    __uint8_t* newByteArray = (__uint8_t *)calloc(numBytes, sizeof(__uint8_t));
+
+
     for (int i = start; i < end; i++) {
         newByteArray[i - start] = byteArray[i];
     }
+
+    return newByteArray;
 }
 

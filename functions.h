@@ -61,15 +61,15 @@ struct Keys PKE_KeyGen();
 //algorithm 13: K-PKE.Encrypt()
 __uint8_t PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r, __uint8_t d);
 
-__uint8_t* XOF(__uint8_t *rho, __uint8_t i, __uint8_t j, __uint16_t sizeRho, __uint16_t d, __uint16_t* sizeOut);
-__uint8_t* NPF(__uint8_t* r, __uint16_t sizeR, __uint8_t n, __uint16_t d, __uint8_t eta, __uint16_t* sizeOut);
+__uint8_t* XOF(__uint8_t* rho, __uint8_t i, __uint8_t j, __uint16_t sizeRho, __uint16_t* sizeOut);
+__uint8_t* PRF(__uint8_t* r, __uint16_t sizeR, __uint8_t n, __uint8_t eta, __uint16_t* sizeOut);
 
 __uint8_t* vector2Bytes(__uint16_t** vector, __uint16_t numBytes);
 __uint16_t** multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector);
 __uint16_t** sumVector(__uint16_t** vector1, __uint16_t** vector2);
 __uint16_t* sumPoly(__uint16_t* poly1, __uint16_t* poly2);
 __uint16_t* mulPoly(__uint16_t* poly1, __uint16_t* poly2);
-void* concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2, __uint8_t* nuwByteArray, __uint16_t* numBytes);
+__uint8_t* concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2, __uint16_t* numBytes);
 
 __uint8_t bitRev7(__uint8_t i);
 // Modular arithmetic functions
@@ -82,5 +82,5 @@ __uint16_t mulModq(__uint16_t a, __uint16_t b);
 __uint8_t* generateRandomBytes(__uint8_t d);
 
 __uint8_t* copyBytesArray(__uint8_t* byteArray, __uint16_t numBytes);
-void *segmentBytesArray(__uint8_t *byteArray, __uint16_t start, __uint16_t end, __uint8_t *newByteArray, __uint16_t* numBytes)
+__uint8_t* segmentBytesArray(__uint8_t *byteArray, __uint16_t start, __uint16_t end, __uint16_t* numBytes);
 #endif
