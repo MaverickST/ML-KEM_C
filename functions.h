@@ -149,7 +149,7 @@ struct Keys PKE_KeyGen();
  * 
  * @param dkPKE array of 384*K bytes
  * @param cipherText array of 32*(d_u*K + d_v) bytes
- * @return __uint8_t* array of 32 bytes
+ * @return __uint8_t* m -> array of 32 bytes
  */
 __uint8_t* PKE_Decrypt(__uint8_t* dkPKE, __uint8_t* cipherText);
 

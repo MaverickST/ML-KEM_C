@@ -450,13 +450,6 @@ __uint8_t *PKE_Decrypt(__uint8_t *dkPKE, __uint8_t *cipherText) {
         fprintf(stderr, "Memory allocation error - PKE_Decrypt\n");
         return NULL;
     }
-    for (int i = 0; i < K; i++) {
-        vectorS_NTT[i] = (__uint16_t *)calloc(256, sizeof(__uint16_t));
-        if (vectorS_NTT[i] == NULL) {
-            fprintf(stderr, "Memory allocation error - PKE_Decrypt\n");
-            return NULL;
-        }
-    }
 
     // Decoding dkPKE
     __uint8_t d = 12;
@@ -467,11 +460,7 @@ __uint8_t *PKE_Decrypt(__uint8_t *dkPKE, __uint8_t *cipherText) {
             dkPKE_i[j] = dkPKE[32*d*i + j];
         }
         // Decode the byte array into 256 integers mod 2^d (Q).
-        __uint16_t* dkPKEDecoded = byteDecode(dkPKE_i, d);
-        for (int j = 0; j < 256; j++) {
-            vectorS_NTT[i][j] = dkPKEDecoded[j];
-        }
-        free(dkPKEDecoded);
+        vectorS_NTT[i] = byteDecode(dkPKE_i, d);
     }
 
     // Generation w
