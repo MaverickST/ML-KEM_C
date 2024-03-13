@@ -513,7 +513,8 @@ struct Keys ML_KEM_KeyGen() {
     keysML_KEM.ek = keysPKE.ek;
 
     // Concatenation
-    __uint8_t* concat_dkPKE_ekMLKEM = concatenateBytes(keysPKE.dk, keysML_KEM.ek, 384*K, 384*K + 32);
+    size_t sizeConcat = 0;
+    __uint8_t* concat_dkPKE_ekMLKEM = concatenateBytes(keysPKE.dk, keysML_KEM.ek, 384*K, 384*K + 32, &sizeConcat);
     // __uint8_t* concat_dK_ek_Hek = concatenateBytes(concat_dkPKE_ekMLKEM, SHA3_256(keysML_KEM.ek), 2*384*K + 32, 32);
 
     return keysML_KEM;
@@ -625,19 +626,80 @@ __uint8_t PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r, __uint8_t d)
     free(outPRF);
 
     // r vector in NTT domain
-    __uint16_t** vectorR_NTT = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    __uint16_t **vectorR_NTT = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
     if (vectorR_NTT == NULL) {
-        fprintf(stderr, "Memory allocation error (Vector r) - PKE_Encrypt\n");
-        return;
+        fprintf(stderr, "Memory allocation error - PKE_Decrypt\n");
+        return NULL;
     }
     for (int i = 0; i < K; i++) {
-        vectorR_NTT[i] = polyF2polyNTT(vectorR[i]);
+        vectorR_NTT[i] = NTT(vectorR[i]);
     }
+    freeVector(vectorR, K);
 
-    //
+
+    //  u ← NTT−1(Aˆ ⊺ ◦ rˆ)+ e1
+    __uint16_t* vectorMultResult = vectorDotProduct(matrixAT, vectorR_NTT);
+    __uint16_t* inverseNTTResult = inverseNTT(vectorMultResult);
+    __uint16_t* vectorU = sumPoly(inverseNTTResult, vectorE1);
+    free(vectorMultResult);
+    free(inverseNTTResult);
+
+    __uint16_t* mDecoded = byteDecode(m, 1);
+    __uint16_t* vectorMu = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+    for (int i = 0; i < 256; i++) {
+        vectorMu[i] = decompress(mDecoded[i], 1);
+    }
+    free(mDecoded);
+    freeVector(matrixAT, K*K);
 
 
-    return 1;
+    // v ← NTT−1(ˆt⊺ ◦ rˆ)+ e2 + µ
+    __uint16_t** vectorT_transpose = (__uint16_t **)calloc(256, sizeof(__uint16_t *));
+    if (vectorT_transpose == NULL) {
+        fprintf(stderr, "Memory allocation error - PKE_Encrypt\n");
+        return NULL;
+    }
+    vectorT_transpose[0] = vectorT;
+    free(vectorT);
+
+    vectorMultResult = vectorDotProduct(vectorT_transpose, vectorR_NTT);
+    inverseNTTResult = inverseNTT(vectorMultResult);
+    __uint16_t* sum1 = sumPoly(inverseNTTResult, vectorE2);
+    __uint16_t* vectorV = sumPoly(sum1, vectorMu);
+    free(vectorMultResult);
+    free(inverseNTTResult);
+    free(sum1);
+    freeVector(vectorT_transpose, 1);
+    freeVector(vectorR_NTT, K);
+    free(vectorE2);
+    free(vectorMu);
+
+    //c1 ← ByteEncodedu (Compressdu (u))
+    __uint16_t* uCompressed = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+    for (int i = 0; i < 256; i++) {
+        uCompressed[i] = compress(vectorU[i], D_u);
+    }
+    free(vectorU);
+
+    __uint8_t* c1 = (__uint8_t*)calloc(32*D_u*K, sizeof(__uint8_t));
+    for (int i = 0; i < K; i++) {
+        __uint8_t* uCompressedEncoded = byteEncode(uCompressed, D_u);
+        for (int j = 0; j < 32*D_u; j++) {
+            c1[32*D_u*i + j] = uCompressedEncoded[j];
+        }
+        free(uCompressedEncoded);
+    }
+    freeVector(vectorU, K);
+    
+
+    __uint8_t* c2 = byteEncode(vectorV, D_v);
+    free(vectorV);
+
+    __uint16_t sizeC;
+    __uint8_t* c = concatenateBytes(c1, c2, 32*D_u*K, 32*D_v, &sizeC);
+
+
+    return c;
 
 }
 
