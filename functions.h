@@ -137,8 +137,8 @@ __uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uin
  * @brief Algorithm 12: Generates an encryption key and a corresponding decryption key.
  * 
  * @return struct Keys which containt ek and dk keys.
- * @note ek is an array of 384*K + 32 bytes.
- * @note dk is an array of 384*K bytes.
+ * @note encrypt key (ek) is an array of 384*K + 32 bytes.
+ * @note decrypt key (dk) is an array of 384*K bytes.
  */
 struct Keys PKE_KeyGen();
 
@@ -151,6 +151,14 @@ struct Keys PKE_KeyGen();
  */
 __uint8_t* PKE_Decrypt(__uint8_t* dkPKE, __uint8_t* cipherText);
 
+/**
+ * @brief Algorithm 15: Generates an encapsulation key and a corresponding decapsulation key.
+ * 
+ * @return struct Keys 
+ * @note encapsulation key (ek) is an array of 384*K + 32 bytes
+ * @note decapsulation key (dk) is an array of 768*K + 96 bytes
+ */
+struct Keys ML_KEM_KeyGen();
 
 // ---------------------------------------------------------------------------------
 // -------------------------------- SOPPORT FUNCTIONS ------------------------------
