@@ -15,6 +15,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "utilities.h"
+#include "mappings.h"
 
 #define k_BARRETT 12     // k = log2(q)
 #define r_BARRETT 5039   // r = 4^k/q
@@ -143,17 +145,23 @@ __uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uin
 struct Keys PKE_KeyGen();
 
 /**
+ * @brief Algorithm 13: Uses the encryption key to encrypt a plaintext message using the randomness r.
+ * 
+ * @param ekPKE array of 384*K + 32 bytes
+ * @param m array of 32 bytes
+ * @param r array of 32 bytes
+ * @return __uint8_t* ciphertext (c) -> array of 32*(d_u*K + d_v) bytes
+ */
+__uint8_t* PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r);
+
+/**
  * @brief Algorithm 14: Uses the decryption key to decrypt a ciphertext.
  * 
  * @param dkPKE array of 384*K bytes
  * @param cipherText array of 32*(d_u*K + d_v) bytes
- * @return __uint8_t* array of 32 bytes
+ * @return __uint8_t* message (m) -> array of 32 bytes
  */
-__uint8_t PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r, __uint8_t d);
-
-__uint8_t* XOF(__uint8_t* rho, __uint8_t i, __uint8_t j, __uint16_t sizeRho, __uint16_t* sizeOut);
-__uint8_t* PRF(__uint8_t* r, __uint16_t sizeR, __uint8_t n, __uint8_t eta, __uint16_t* sizeOut);
-
+__uint8_t *PKE_Decrypt(__uint8_t *dkPKE, __uint8_t *cipherText);
 
 /**
  * @brief Algorithm 15: Generates an encapsulation key and a corresponding decapsulation key.
@@ -164,9 +172,49 @@ __uint8_t* PRF(__uint8_t* r, __uint16_t sizeR, __uint8_t n, __uint8_t eta, __uin
  */
 struct Keys ML_KEM_KeyGen();
 
+/**
+ * @brief Algorithm 16: Uses the encapsulation key to generate a shared key and an associated ciphertext.
+ * 
+ * @param ekML 384*K+32 bytes array
+ * @return __uint8_t* concatenation of the Shared key k (32 bytes array) 
+ * and c the cipher text(32*(d_u*K + d_v) bytes array)
+ */
+__uint8_t* ML_KEM_Encaps(__uint8_t* ekML);
+
+/**
+ * @brief Algorithm 17: Uses the decapsulation key to produce a shared key from a ciphertext.
+ * 
+ * @param cipherText 32*(d_u*K + d_v) bytes array. Ciphertext.
+ * @param dkML decapsulation key (768*K + 96 bytes array)
+ * @return __uint8_t* shared key k (32 bytes array)
+ */
+__uint8_t* ML_KEM_Decaps(__uint8_t* cipherText, __uint8_t* dkML);
+
 // ---------------------------------------------------------------------------------
 // -------------------------------- SOPPORT FUNCTIONS ------------------------------
 // ---------------------------------------------------------------------------------
+
+/**
+ * @brief The function XOF takes one 32-byte input and two 1-byte inputs. 
+ * It produces a variable-length output.
+ * 
+ * @param rho 32-bytes array
+ * @param i 1-byte input
+ * @param j 1-byte input
+ * @return __uint8_t* variable-length output
+ */
+__uint8_t* XOF(__uint8_t* rho, __uint8_t i, __uint8_t j);
+
+/**
+ * @brief The function PRF takes a parameter η ∈ {2,3}, one 32-byte input, 
+ * and one 1-byte input. It produces one (64 · η)-byte output.
+ * 
+ * @param r 32-bytes array
+ * @param n 1-byte input
+ * @param eta 1-byte input
+ * @return __uint8_t* 64*eta bytes output
+ */
+__uint8_t* PRF(__uint8_t* r, __uint8_t n, __uint8_t eta);
 
 /**
  * @brief Round a rational number to the nearest integer
@@ -247,7 +295,7 @@ __uint16_t* sumPoly(__uint16_t* poly1, __uint16_t* poly2);
  * @param numBytes2 
  * @return __uint8_t* 
  */
-__uint8_t* concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2, __uint16_t* numBytes);
+__uint8_t* concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2);
 
 /**
  * @brief Aply the conditional reduction to integers mod Q
@@ -296,5 +344,4 @@ __uint8_t* generateRandomBytes(__uint8_t d);
 void freeVector(__uint16_t **vector, __uint8_t sizeK);
 
 __uint8_t* copyBytesArray(__uint8_t* byteArray, __uint16_t numBytes);
-__uint8_t* segmentBytesArray(__uint8_t *byteArray, __uint16_t start, __uint16_t end, __uint16_t* numBytes);
 #endif
