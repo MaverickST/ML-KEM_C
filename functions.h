@@ -149,7 +149,11 @@ struct Keys PKE_KeyGen();
  * @param cipherText array of 32*(d_u*K + d_v) bytes
  * @return __uint8_t* array of 32 bytes
  */
-__uint8_t* PKE_Decrypt(__uint8_t* dkPKE, __uint8_t* cipherText);
+__uint8_t PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r, __uint8_t d);
+
+__uint8_t* XOF(__uint8_t* rho, __uint8_t i, __uint8_t j, __uint16_t sizeRho, __uint16_t* sizeOut);
+__uint8_t* PRF(__uint8_t* r, __uint16_t sizeR, __uint8_t n, __uint8_t eta, __uint16_t* sizeOut);
+
 
 /**
  * @brief Algorithm 15: Generates an encapsulation key and a corresponding decapsulation key.
@@ -243,7 +247,7 @@ __uint16_t* sumPoly(__uint16_t* poly1, __uint16_t* poly2);
  * @param numBytes2 
  * @return __uint8_t* 
  */
-__uint8_t* concatenateBytes(__uint8_t* byteArray1, __uint8_t* byteArray2, __uint16_t numBytes1, __uint16_t numBytes2);
+__uint8_t* concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2, __uint16_t* numBytes);
 
 /**
  * @brief Aply the conditional reduction to integers mod Q
@@ -292,5 +296,5 @@ __uint8_t* generateRandomBytes(__uint8_t d);
 void freeVector(__uint16_t **vector, __uint8_t sizeK);
 
 __uint8_t* copyBytesArray(__uint8_t* byteArray, __uint16_t numBytes);
-
+__uint8_t* segmentBytesArray(__uint8_t *byteArray, __uint16_t start, __uint16_t end, __uint16_t* numBytes);
 #endif

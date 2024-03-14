@@ -513,7 +513,8 @@ struct Keys ML_KEM_KeyGen() {
     keysML_KEM.ek = keysPKE.ek;
 
     // Concatenation
-    __uint8_t* concat_dkPKE_ekMLKEM = concatenateBytes(keysPKE.dk, keysML_KEM.ek, 384*K, 384*K + 32);
+    size_t sizeConcat = 0;
+    __uint8_t* concat_dkPKE_ekMLKEM = concatenateBytes(keysPKE.dk, keysML_KEM.ek, 384*K, 384*K + 32, &sizeConcat);
     // __uint8_t* concat_dK_ek_Hek = concatenateBytes(concat_dkPKE_ekMLKEM, SHA3_256(keysML_KEM.ek), 2*384*K + 32, 32);
 
     return keysML_KEM;
@@ -551,7 +552,193 @@ __uint8_t *vector2Bytes(__uint16_t **vector, __uint16_t numBytes) {
     return byteArray;
 }
 
-__uint16_t **multiplyMatrixByVector(__uint16_t **matrix, __uint16_t** vector){
+__uint8_t PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r, __uint8_t d)
+{
+    //Input encryption key ekPKE, message m, and encryption randomness r
+    //Output ciphertext c
+    // Uses the encryption key to encrypt a plaintext message using the randomness r.
+    __uint16_t sizeEkPKE = 384*K + 32;
+    __uint16_t sizeM = 32;
+    __uint16_t sizeR = 32;
+    
+    __uint8_t n = 0;
+
+    __uint16_t sizeInByteD_vT = 0;
+    __uint8_t* inByteDT_vT = segmentBytesArray(ekPKE, 0, 384*K, &sizeInByteD_vT);
+    __uint8_t* vectorT = byteDecode(inByteDT_vT, d);
+    free(inByteDT_vT);
+
+
+    
+    __uint16_t sizeRho = 0;
+    __uint8_t* rho = segmentBytesArray(ekPKE, 384*K, 384*K + 32, &sizeRho);
+
+
+    // Generates a KxK matrix of polynomials (in NTT domain) mod q
+    __uint16_t** matrixAT = (__uint16_t **)calloc(K*K, sizeof(__uint16_t *));
+    if (matrixAT == NULL) {
+        fprintf(stderr, "Memory allocation error (Matrix A) - PKE_Encrypt\n");
+        return;
+    }
+    for (int i = 0; i < K; i++) {
+        for (int j = 0; j < K; j++) {
+            __uint16_t sizeOutXOF = 0;
+            __uint8_t* outXOF = XOF(rho, i, j, sizeRho, &sizeOutXOF); // XOF(ρ,j,i)
+            matrixAT[j*K + i] = sampleNTT(outXOF); 
+            free(outXOF);
+        }
+    }
+
+    // Generates a Kx1 vector (s vector) of polynomials mod q
+    __uint16_t** vectorR = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (vectorR == NULL) {
+        fprintf(stderr, "Memory allocation error (Vector r) - PKE_Encrypt\n");
+        return;
+    }
+    for (int i = 0; i < K; i++) {
+        for (int j = 0; j < K; j++) {
+            __uint16_t sizeOutPRF = 0;
+            __uint8_t* outPRF = PRF(r, sizeR, n, ETA_1, &sizeOutPRF); // PRF(r,n,η1)
+            vectorR[i] = samplePolyCBD(outPRF, ETA_1);
+            free(outPRF);
+            n++;
+        }
+    }
+
+    // Generates a Kx1 vector (e1 vector) of polynomials mod q
+    __uint16_t** vectorE1 = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (vectorE1 == NULL) {
+        fprintf(stderr, "Memory allocation error (Vector e1) - PKE_Encrypt\n");
+        return;
+    }
+    for (int i = 0; i < K; i++) {
+        __uint16_t sizeOutPRF = 0;
+        __uint8_t* outPRF = PRF(r, sizeR, n, ETA_2, &sizeOutPRF); // PRF(r,n,η2)
+        vectorE1[i] = samplePolyCBD(outPRF, ETA_2);
+        free(outPRF);
+        n++;
+    }
+
+    // e2
+    __uint16_t sizeOutPRF = 0;
+    __uint16_t* outPRF = PRF(r, sizeR, n, ETA_2, &sizeOutPRF); // PRF(r,n,η2)
+    __uint16_t* vectorE2 = samplePolyCBD(outPRF, ETA_2);
+    free(outPRF);
+
+    // r vector in NTT domain
+    __uint16_t **vectorR_NTT = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
+    if (vectorR_NTT == NULL) {
+        fprintf(stderr, "Memory allocation error - PKE_Decrypt\n");
+        return NULL;
+    }
+    for (int i = 0; i < K; i++) {
+        vectorR_NTT[i] = NTT(vectorR[i]);
+    }
+    freeVector(vectorR, K);
+
+
+    //  u ← NTT−1(Aˆ ⊺ ◦ rˆ)+ e1
+    __uint16_t* vectorMultResult = vectorDotProduct(matrixAT, vectorR_NTT);
+    __uint16_t* inverseNTTResult = inverseNTT(vectorMultResult);
+    __uint16_t* vectorU = sumPoly(inverseNTTResult, vectorE1);
+    free(vectorMultResult);
+    free(inverseNTTResult);
+
+    __uint16_t* mDecoded = byteDecode(m, 1);
+    __uint16_t* vectorMu = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+    for (int i = 0; i < 256; i++) {
+        vectorMu[i] = decompress(mDecoded[i], 1);
+    }
+    free(mDecoded);
+    freeVector(matrixAT, K*K);
+
+
+    // v ← NTT−1(ˆt⊺ ◦ rˆ)+ e2 + µ
+    __uint16_t** vectorT_transpose = (__uint16_t **)calloc(256, sizeof(__uint16_t *));
+    if (vectorT_transpose == NULL) {
+        fprintf(stderr, "Memory allocation error - PKE_Encrypt\n");
+        return NULL;
+    }
+    vectorT_transpose[0] = vectorT;
+    free(vectorT);
+
+    vectorMultResult = vectorDotProduct(vectorT_transpose, vectorR_NTT);
+    inverseNTTResult = inverseNTT(vectorMultResult);
+    __uint16_t* sum1 = sumPoly(inverseNTTResult, vectorE2);
+    __uint16_t* vectorV = sumPoly(sum1, vectorMu);
+    free(vectorMultResult);
+    free(inverseNTTResult);
+    free(sum1);
+    freeVector(vectorT_transpose, 1);
+    freeVector(vectorR_NTT, K);
+    free(vectorE2);
+    free(vectorMu);
+
+    //c1 ← ByteEncodedu (Compressdu (u))
+    __uint16_t* uCompressed = (__uint16_t*)calloc(256, sizeof(__uint16_t));
+    for (int i = 0; i < 256; i++) {
+        uCompressed[i] = compress(vectorU[i], D_u);
+    }
+    free(vectorU);
+
+    __uint8_t* c1 = (__uint8_t*)calloc(32*D_u*K, sizeof(__uint8_t));
+    for (int i = 0; i < K; i++) {
+        __uint8_t* uCompressedEncoded = byteEncode(uCompressed, D_u);
+        for (int j = 0; j < 32*D_u; j++) {
+            c1[32*D_u*i + j] = uCompressedEncoded[j];
+        }
+        free(uCompressedEncoded);
+    }
+    freeVector(vectorU, K);
+    
+
+    __uint8_t* c2 = byteEncode(vectorV, D_v);
+    free(vectorV);
+
+    __uint16_t sizeC;
+    __uint8_t* c = concatenateBytes(c1, c2, 32*D_u*K, 32*D_v, &sizeC);
+
+
+    return c;
+
+}
+
+__uint8_t* XOF(__uint8_t* rho, __uint8_t i, __uint8_t j, __uint16_t sizeRho, __uint16_t* sizeOut)
+{
+    __uint16_t sizeInput1;
+    __uint8_t* input1 = concatenateBytes(rho, &i, sizeRho, 1, &sizeInput1);
+
+    __uint16_t sizeInput2;
+    __uint8_t* input2 = concatenateBytes(input1, &j, sizeInput1, 1, &sizeInput2);
+
+    sizeOut = 32;
+    __uint8_t* output = (__uint8_t*)calloc(sizeOut, sizeof(__uint8_t));
+
+    SHAKE_128(input2, sizeInput2, output, sizeOut);
+
+    free(input1);
+    free(input2);
+
+    return output;
+}
+
+__uint8_t* PRF(__uint8_t* r, __uint16_t sizeR, __uint8_t n, __uint8_t eta, __uint16_t* sizeOut)
+{
+    
+    __uint16_t sizeInput; 
+    __uint8_t* input = concatenateBytes(r, &n, sizeR, 1, &sizeInput);
+    
+    sizeOut = 64*eta;
+    __uint8_t* output = (__uint8_t*)calloc(sizeOut, sizeof(__uint8_t));
+
+    SHAKE_256(input, sizeInput, output, sizeOut);
+
+    free(input);
+    
+    return output;
+}
+
+__uint16_t **multiplyMatrixByVector(__uint16_t** matrix, __uint16_t** vector){
 
     __uint16_t **product = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
     if (product == NULL) {
@@ -609,24 +796,36 @@ __uint16_t* sumPoly(__uint16_t* poly1, __uint16_t* poly2) {
     return sum;
 }
 
-__uint8_t *concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2) {
-    // Concatenates two byte arrays
+__uint16_t* mulPoly(__uint16_t *poly1, __uint16_t *poly2) {
 
-    __uint8_t *concBytes = (__uint8_t *)calloc(numBytes1 + numBytes2, sizeof(__uint8_t));
-    if (concBytes == NULL) {
-        fprintf(stderr, "Memory allocation error - contateBytes\n");
+    __uint16_t *product = (__uint16_t *)calloc(256, sizeof(__uint16_t));
+    if (product == NULL) {
+        fprintf(stderr, "Memory allocation error - mulPoly\n");
         return NULL;
     }
-    // concBytes = (byteArray1 << numBytes1) | byteArray2;
+    for (int i = 0; i < 256; i++) {
+        product[i] = mulModq(poly1[i], poly2[i]);
+    }
+    return product;
+}
 
-    for (int i = 0; i < numBytes1 + numBytes2; i++) {
+__uint8_t* concatenateBytes(__uint8_t *byteArray1, __uint8_t *byteArray2, __uint16_t numBytes1, __uint16_t numBytes2, __uint16_t* numBytes)
+{
+    // Concatenates two byte arrays
+
+    numBytes = numBytes1 + numBytes2;
+
+    __uint8_t* nuwByteArray = (__uint8_t *)calloc(numBytes, sizeof(__uint8_t));
+
+    for (int i = 0; i < numBytes; i++) {
         if (i < numBytes1) {
-            concBytes[i] = byteArray1[i];
+            nuwByteArray[i] = byteArray1[i];
         }else {
-            concBytes[i] = byteArray2[i - numBytes1];
+            nuwByteArray[i] = byteArray2[i - numBytes1];
         }
     }
-    return concBytes;
+
+    return nuwByteArray;
 }
 
 __uint16_t reduceBarrett(__uint32_t aMul) {
@@ -686,3 +885,21 @@ __uint8_t *copyBytesArray(__uint8_t *byteArray, __uint16_t numBytes) {
 
     return newByteArray;
 }
+
+__uint8_t* segmentBytesArray(__uint8_t *byteArray, __uint16_t start, __uint16_t end, __uint16_t* numBytes)
+{
+    // Extracts a segment of a byte array
+
+    numBytes = end - start + 1;
+
+
+    __uint8_t* newByteArray = (__uint8_t *)calloc(numBytes, sizeof(__uint8_t));
+
+
+    for (int i = start; i < end; i++) {
+        newByteArray[i - start] = byteArray[i];
+    }
+
+    return newByteArray;
+}
+
