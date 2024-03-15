@@ -230,29 +230,6 @@ void runTestMultiplyNTT(){
     free(product);
 }
 
-void runTestPKE_Decrypt() {
-
-    // Testing PKE_Decrypt
-    __uint8_t* dkPKE = generateRandomBytes(12*K);
-    __uint8_t* cipherText = generateRandomBytes(D_u*K + D_v);
-    __uint8_t* m = PKE_Decrypt(dkPKE, cipherText);
-
-    // Printing
-    printf("dkPKE: \n");
-    printBytesHex(dkPKE, 12*K);
-
-    printf("cipherText: \n");
-    printBytesHex(cipherText, D_u*K + D_v);
-
-    printf("m: \n");
-    printBytesHex(m, 1);
-
-    // free memory
-    free(dkPKE);
-    free(cipherText);
-    free(m);
-}
-
 void runTestSumPoly() {
 
     __uint16_t* poly1 = generateRandomPoly(Q);
@@ -382,7 +359,7 @@ void runTestVector2Bytes() {
 
     printf("Bytes rho: \n");
     rho = generateRandomBytes(1);
-    printBytes(rho, 1);
+    printBytesHex(rho, 32);
     printf("\n");
 
     printf("Bytes ekPKE: \n");
@@ -390,11 +367,11 @@ void runTestVector2Bytes() {
     for (int i = 0; i < 32; i++){
         ekPKE[384*K + i] = rho[i];
     }
-    printBytes(ekPKE, (384*K + 32)/32);
+    printBytesHex(ekPKE, (384*K + 32));
 
     printf("Bytes dkPKE: \n");
     dkPKE = vector2Bytes(vector2, 384*K);
-    printBytes(dkPKE, (384*K)/32);
+    printBytesHex(dkPKE, (384*K));
 
     // Free to each element 
     for (int i = 0; i < K; i++){
@@ -437,6 +414,80 @@ void runTestVectorDotProduct() {
     free(result);
 }
 
+void runTestML_KEM() {
+
+    // Key generation
+    struct Keys keysML_KEM = ML_KEM_KeyGen();
+
+    printf("Encaps key: \n");
+    printBytesHex(keysML_KEM.ek, 384*K + 32);
+
+    printf("Decaps key: \n");
+    printBytesHex(keysML_KEM.dk, 768*K + 96);
+
+    // Encapsulation
+    __uint8_t sharedKey_B[32];
+    __uint8_t c[32*(D_u*K + D_v)];
+    __uint8_t* K_c = ML_KEM_Encaps(keysML_KEM.ek);
+
+    for (int i = 0; i < 32 + 32*(D_u*K + D_v); i++) {
+        if (i < 32) {
+            sharedKey_B[i] = K_c[i];
+        } else {
+            c[i - 32] = K_c[i];
+        
+        }
+    }
+
+    printf("Shared key B: \n");
+    printBytesHex(sharedKey_B, 32);
+
+    printf("Ciphertext: \n");
+    printBytesHex(c, 32*(D_u*K + D_v));
+
+    // Decapsulation
+    __uint8_t* sharedKey_A = ML_KEM_Decaps(keysML_KEM.dk, c);
+
+    printf("Shared key A: \n");
+    printBytesHex(sharedKey_A, 32);
+
+    // Free memory
+    free(K_c);
+    free(sharedKey_A);
+    free(keysML_KEM.ek);
+    free(keysML_KEM.dk);
+}
+
+void runTest_XOF_PRF()
+{
+    // Test the functions XOF and PRF
+
+    __uint8_t* rho = generateRandomBytes(1);
+    __uint8_t* r = generateRandomBytes(1);
+    __uint8_t j = 1, i = 2, n = 3;
+
+    __uint8_t* outXOF = XOF(rho, i, j);
+    __uint8_t* outPRF = PRF(r, n, ETA_2);
+
+    printf("Rho: \n");
+    printBytesHex(rho, 32);
+
+    printf("R: \n");
+    printBytesHex(r, 32);
+
+    printf("XOF: \n");
+    printBytesHex(outXOF, 96);
+
+    printf("PRF: \n");
+    printBytesHex(outPRF, 64*ETA_2);
+
+    // Free memory
+    free(rho);
+    free(r);
+    free(outXOF);
+    free(outPRF);
+}
+
 __uint16_t* generateRandomPoly(__uint16_t mod){
     
     // Generate 256 random integers mod q (o any number)
@@ -445,6 +496,118 @@ __uint16_t* generateRandomPoly(__uint16_t mod){
         poly[i] = rand()/((RAND_MAX + 1u)/(mod));
     }
     return poly;
+}
+
+void runTestPKE_KeyGen() {
+
+    // Testing PKE_KeyGen
+    struct Keys keysPKE = PKE_KeyGen();
+
+    printf("ekPKE: \n");
+    printBytesHex(keysPKE.ek, 384*K + 32);
+
+    printf("dkPKE: \n");
+    printBytesHex(keysPKE.dk, 384*K);
+
+    // Free memory
+    free(keysPKE.ek);
+    free(keysPKE.dk);
+}
+
+void runTestPKE_Encrypt() {
+
+    // Testing PKE_Encrypt
+    __uint8_t* ekPKE = generateRandomBytes(12*K + 1);
+    __uint8_t* m = generateRandomBytes(1);
+    __uint8_t* r = generateRandomBytes(1);
+
+    __uint8_t* c = PKE_Encrypt(ekPKE, m, r);
+
+    printf("ekPKE: \n");
+    printBytesHex(ekPKE, 384*K + 32);
+
+    printf("c: \n");
+    printBytesHex(c, 32*(D_u*K + D_v));
+
+    // Free memory
+    free(ekPKE);
+    free(r);
+    free(c);
+    free(m);
+}
+
+void runTestPKE_Decrypt() {
+
+    // Testing PKE_Decrypt
+    __uint8_t* dkPKE = generateRandomBytes(12*K);
+    __uint8_t* cipherText = generateRandomBytes(D_u*K + D_v);
+    __uint8_t* m = PKE_Decrypt(dkPKE, cipherText);
+
+    // Printing
+    printf("dkPKE: \n");
+    printBytesHex(dkPKE, 384*K);
+
+    printf("cipherText: \n");
+    printBytesHex(cipherText, 32*(D_u*K + D_v));
+
+    printf("m: \n");
+    printBytesHex(m, 32);
+
+    // free memory
+    free(dkPKE);
+    free(cipherText);
+    free(m);
+}
+
+void runTestPKE() {
+    // Testing the PKE scheme
+
+    // Key generation
+    struct Keys keysPKE;
+    keysPKE = PKE_KeyGen();
+
+    // Encryption
+    __uint8_t* m = generateRandomBytes(1);
+    __uint8_t Hek[32];
+    __uint8_t r[32];
+    __uint8_t k[32];
+    __uint8_t K_r[64];
+
+    SHA3_256(keysPKE.ek, 384*K + 32, Hek); // H(ek)
+    __uint8_t* concat_m_Hek = concatenateBytes(m, Hek, 32, 32);
+    SHA3_512(concat_m_Hek, 64, K_r); // (K,r) ← G(m∥H(ek))
+
+    // Split K_r into k and r
+    for (int i = 0; i < 32; i++) {
+        k[i] = K_r[i];
+        r[i] = K_r[i + 32];
+    }
+
+    __uint8_t* c = PKE_Encrypt(keysPKE.ek, m, r);
+
+    // Decryption
+    __uint8_t* mDec = PKE_Decrypt(keysPKE.dk, c);
+
+    // Printing
+    printf("ekPKE: \n");
+    printBytesHex(keysPKE.ek, 384*K + 32);
+
+    printf("dkPKE: \n");
+    printBytesHex(keysPKE.dk, 384*K);
+
+    printf("m: \n");
+    printBytesHex(m, 32);
+
+    printf("mDec: \n");
+    printBytesHex(mDec, 32);
+
+    // Free memory
+    free(keysPKE.ek);
+    free(keysPKE.dk);
+    free(m);
+    free(c);
+    free(mDec);
+
 }
 
 void printPoly(__uint16_t* poly){
@@ -461,9 +624,9 @@ void printBytes(__uint8_t* byteArray, __uint8_t d){
     printf("\n");
 }
 
-void printBytesHex(__uint8_t *byteArray, __uint8_t d) {
-    for (int i = 0; i < 32*d; i++) {
-        printf("%02x ", byteArray[i]);
+void printBytesHex(__uint8_t *byteArray, __uint16_t numBytes) {
+    for (int i = 0; i < numBytes; i++) {
+        printf("%02x", byteArray[i]);
     }
     printf("\n");
 }
