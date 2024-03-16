@@ -1,7 +1,7 @@
 /*!
 \brief this is the first program in where we will start the program
 \autho Cristian David Araujo Araujo, Maverick Sossa Tobon
-gcc main.c functions.c utilities.c mappings.c test.c -o ./program.out
+gcc main.c functions.c utilities.c mappings.c test.c fips202.c fips202x2.c  -o ./program.out
 */
 
 #include "functions.h"
