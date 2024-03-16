@@ -21,16 +21,6 @@ __uint8_t* bitsToBytes(__uint32_t* bitArray, __uint16_t numBits) {
         bytesArray[i] = (bitArray[i / 4] >> ((i % 4) * 8)) & 0xFF;
     }
 
-    // // Iterate over the bit array
-    // for (__uint32_t i = 0; i < numBits; i++) {
-    //     // Calculate the index of the corresponding element in bitArray
-    //     __uint32_t bitIndex = i / 32;
-    //     // Calculate the bit position within the element of bitArray
-    //     __uint32_t bitPosition = i % 32;
-    //     // Set the bit in the corresponding byte (little-endian format)
-    //     bytesArray[i / 8] |= (bitArray[bitIndex] >> bitPosition) & 0x01;
-    // }
-
     return bytesArray;
 }
 
