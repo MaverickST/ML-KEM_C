@@ -847,7 +847,7 @@ __uint8_t* XOF(__uint8_t* rho, __uint8_t i, __uint8_t j) {
     __uint16_t sizeInput2 = 1 + sizeInput1;
     __uint8_t* input2 = concatenateBytes(input1, &j, sizeInput1, 1);
 
-    __uint16_t sizeOut = 256*4;
+    __uint16_t sizeOut = 2*256;
     __uint8_t* output = (__uint8_t*)calloc(sizeOut, sizeof(__uint8_t));
 
     SHAKE_128(input2, sizeInput2, output, sizeOut);
