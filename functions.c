@@ -175,7 +175,7 @@ __uint16_t* sampleNTT(__uint8_t* byteArray){
     __uint16_t d1, d2;
     while(j < 256){
         d1 = byteArray[i] + 256*(byteArray[i + 1]%16);
-        d2 = byteArray[i + 1]>>4 + 16*byteArray[i + 2];
+        d2 = (byteArray[i + 1]>>4) + (16*byteArray[i + 2]);
         if (d1 < Q) {
             aNTT[j] = d1;
             j++;
@@ -199,8 +199,8 @@ __uint16_t* samplePolyCBD(__uint8_t* byteArray, __uint8_t eta){
         return NULL;
     }
 
-    __uint16_t x, y;
     for (int i = 0; i < 256; i++) {
+        __uint16_t x = 0, y = 0;
         for (int j = 0; j < eta; j++) {
             x += (bitArray[(2*i*eta + j)>>5] >> ((2*i*eta + j)%32))&1;
         }
@@ -309,7 +309,8 @@ __uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uin
 
 struct Keys PKE_KeyGen() {
     // Generates an encryption key and a corresponding decryption key
-    __uint8_t* d = generateRandomBytes(1);
+    __uint8_t d[32] = {0x92,0xAC,0x7D,0x1F,0x83,0xBA,0xFA,0xE6,0xEE,0x86,0xFE,0x00,0xF9,0x5D,0x81,
+                        0x33,0x75,0x77,0x24,0x34,0x86,0x0F,0x5F,0xF7,0xD5,0x4F,0xFC,0x37,0x39,0x9B,0xC4,0xCC};
     __uint8_t n = 0;
 
     // Getting ρ and σ hashes by G(d)
@@ -358,8 +359,8 @@ struct Keys PKE_KeyGen() {
         // return;
     }
     for (int i = 0; i < K; i++) {
-        __uint8_t* outPRF = PRF(sigma, n, (__uint8_t)ETA_2); // PRF(σ,n,η2)
-        vectorE[i] = samplePolyCBD(outPRF, ETA_2); // PRFη1 (σ,N)
+        __uint8_t* outPRF = PRF(sigma, n, (__uint8_t)ETA_1); // PRF(σ,n,η2)
+        vectorE[i] = samplePolyCBD(outPRF, ETA_1); // PRFη1 (σ,N)
         free(outPRF);
         n++;
     }
@@ -405,6 +406,7 @@ struct Keys PKE_KeyGen() {
     freeVector(vectorT_NTT, K);
     freeVector(vectorS_NTT, K);
     freeVector(vectorE_NTT, K);
+    // free(d);
 
     return keysPKE;
 }
@@ -548,7 +550,7 @@ __uint8_t* PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r) {
     for (int i = 0; i < 256; i++) {
         vCompressed[i] = compress(v[i], D_v);
     }
-    __uint8_t* c2 = byteEncode(v, D_v);
+    __uint8_t* c2 = byteEncode(vCompressed, D_v);
 
     // Concatenation to get c
     __uint8_t* c = concatenateBytes(c1, c2, 32*D_u*K, 32*D_v);
@@ -659,7 +661,7 @@ __uint8_t *PKE_Decrypt(__uint8_t *dkPKE, __uint8_t *cipherText) {
     for (int i = 0; i < 256; i++) {
         w[i] = compress(w[i], 1);
     }
-    __uint8_t* wEncoded = byteEncode(w, 1);
+    __uint8_t* m = byteEncode(w, 1);
 
     // Free each dinamic variable.
     freeVector(vectorU, K);
@@ -668,14 +670,15 @@ __uint8_t *PKE_Decrypt(__uint8_t *dkPKE, __uint8_t *cipherText) {
     free(resultDot_NTT);
     free(resultDot);
 
-    return wEncoded;
+    return m;
 }
 
 struct Keys ML_KEM_KeyGen() {
     struct Keys keysML_KEM;
 
     // Random bytes 
-    __uint8_t* z = generateRandomBytes(1);
+    __uint8_t z [32] = {0x92,0xAC,0x7D,0x1F,0x83,0xBA,0xFA,0xE6,0xEE,0x86,0xFE,0x00,0xF9,0x5D,0x81,
+                        0x33,0x75,0x77,0x24,0x34,0x86,0x0F,0x5F,0xF7,0xD5,0x4F,0xFC,0x37,0x39,0x9B,0xC4,0xCC};
 
     // PKE keys
     struct Keys keysPKE = PKE_KeyGen();
@@ -693,6 +696,7 @@ struct Keys ML_KEM_KeyGen() {
     // Free each dinamic variable.
     free(concat_dkPKE_ekMLKEM);
     free(concat_dK_ek_Hek);
+    // free(z);
 
     return keysML_KEM;
 }
@@ -760,7 +764,7 @@ __uint8_t *ML_KEM_Decaps(__uint8_t *cipherText, __uint8_t *dkML) {
     SHA3_512(mp_h, 64, Kp_rp); // (K',r') ← G(m'∥h)
 
     __uint8_t K_[32];
-    SHAKE_256(z_c, 32*(D_u*K + D_v), K_, 32); // K¯ ← J(z∥c,32)
+    SHAKE_256(z_c, 32*(D_u*K + D_v) + 32, K_, 32); // K¯ ← J(z∥c,32)
 
     // Split Kp_rp into K' and r'
     __uint8_t* Kp = (__uint8_t*)calloc(32, sizeof(__uint8_t));
@@ -773,6 +777,9 @@ __uint8_t *ML_KEM_Decaps(__uint8_t *cipherText, __uint8_t *dkML) {
     // Encryption
     __uint8_t* cp = PKE_Encrypt(ekPKE, mp, rp); 
 
+    // printf("Shared key Kp: \n");
+    // printBytesHex(Kp, 32);
+
     // Implicit rejection
     for (int i = 0; i < 32*(D_u*K + D_v); i++) {
         if (cipherText[i] != cp[i]) {
@@ -782,6 +789,12 @@ __uint8_t *ML_KEM_Decaps(__uint8_t *cipherText, __uint8_t *dkML) {
             }
         }
     }
+
+    // printf("Shared key K_: \n");
+    // printBytesHex(K_, 32);
+
+    // printf("Ciphertext cp: \n");
+    // printBytesHex(cp, 32*(D_u*K + D_v));
 
     // Free each dinamic variable.
     free(mp);
@@ -834,7 +847,7 @@ __uint8_t* XOF(__uint8_t* rho, __uint8_t i, __uint8_t j) {
     __uint16_t sizeInput2 = 1 + sizeInput1;
     __uint8_t* input2 = concatenateBytes(input1, &j, sizeInput1, 1);
 
-    __uint8_t sizeOut = 32;
+    __uint16_t sizeOut = 2*256;
     __uint8_t* output = (__uint8_t*)calloc(sizeOut, sizeof(__uint8_t));
 
     SHAKE_128(input2, sizeInput2, output, sizeOut);

@@ -3,8 +3,8 @@
 
 #define N 256
 #define Q 3329
-#define K 2
-#define ETA_1 3
+#define K 3
+#define ETA_1 2
 #define ETA_2 2
 #define D_u 10
 #define D_v 4
@@ -340,6 +340,12 @@ __uint16_t subModq(__uint16_t a, __uint16_t b);
  */
 __uint16_t mulModq(__uint16_t a, __uint16_t b);
 
+/**
+ * @brief Generates a random byte array of size 32*d.
+ * 
+ * @param d 
+ * @return __uint8_t* 
+ */
 __uint8_t* generateRandomBytes(__uint8_t d);
 void freeVector(__uint16_t **vector, __uint8_t sizeK);
 
