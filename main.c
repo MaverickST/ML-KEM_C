@@ -14,6 +14,8 @@ gcc main.c functions.c utilities.c mappings.c test.c -o ./program.out
 
 int main() {
 
+    // random seed
+    srand(time(NULL));
 
     runTestML_KEM();
 
