@@ -292,15 +292,19 @@ __uint16_t baseCaseMultiplyC0(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uin
 __uint16_t baseCaseMultiplyC1(__uint16_t a0, __uint16_t a1, __uint16_t b0, __uint16_t b1){
 
     __uint16_t c1;
-    c1 = addModq( mulModq(a0, b0), mulModq(a1, b1));
+    c1 = addModq( mulModq(a0, b1), mulModq(a1, b0));
 
     return c1;
 }
 
 struct Keys PKE_KeyGen() {
     // Generates an encryption key and a corresponding decryption key
-    __uint8_t d[32] = {0x92,0xAC,0x7D,0x1F,0x83,0xBA,0xFA,0xE6,0xEE,0x86,0xFE,0x00,0xF9,0x5D,0x81,
-                        0x33,0x75,0x77,0x24,0x34,0x86,0x0F,0x5F,0xF7,0xD5,0x4F,0xFC,0x37,0x39,0x9B,0xC4,0xCC};
+    // __uint8_t d[32] = {0xf6,0x88,0x56,0x3f,0x7c,0x66,0xa5,0xdA,0x2d,0x8b,0xdb,0x5a,0x5f,0x3e,0x07, // ML-KEM 768
+    //                     0xbd,0x8d,0xce,0x6f,0x7e,0xfc,0xec,0x7f,0x41,0x29,0x8d,0x79,0x86,0x34,0x59,0xf7,0xcd};
+
+    __uint8_t d[32] = {0x2a, 0x62, 0xc3, 0x9e, 0xf4, 0xfc, 0x49, 0x9f, 0x2d, 0x13, 0x27, 0x16, 0xf4, 0x80, // ML-KEM 1024
+                        0xbb, 0x75, 0x21, 0xa4, 0x95, 0x58, 0xae, 0x84, 0xee, 0x80, 0xd9, 0x35, 0x2e, 0x66, 0xda, 0xf1, 0xe3, 0xa8};
+ 
     __uint8_t n = 0;
 
     // Getting ρ and σ hashes by G(d)
@@ -313,7 +317,7 @@ struct Keys PKE_KeyGen() {
         rho[i] = rho_sigma[i];
         sigma[i] = rho_sigma[i + 32];
     }
-    
+
 
     // Generates a KxK matrix of polynomials (in NTT domain) mod q
     __uint16_t** matrixA = (__uint16_t **)calloc(K*K, sizeof(__uint16_t *));
@@ -323,7 +327,7 @@ struct Keys PKE_KeyGen() {
     }
     for (int i = 0; i < K; i++) {
         for (int j = 0; j < K; j++) {
-            __uint8_t* outXOF = XOF(rho, i, j);
+            __uint8_t* outXOF = XOF(rho, j, i);
             matrixA[i*K + j] = sampleNTT(outXOF); // XOF(ρ,i,j)
             free(outXOF);
         }
@@ -366,6 +370,7 @@ struct Keys PKE_KeyGen() {
     for (int i = 0; i < K; i++) {
         vectorS_NTT[i] = NTT(vectorS[i]);
     }
+
     // e vector in NTT domain
     __uint16_t** vectorE_NTT = (__uint16_t **)calloc(K, sizeof(__uint16_t *));
     if (vectorE_NTT == NULL) {
@@ -375,6 +380,7 @@ struct Keys PKE_KeyGen() {
     for (int i = 0; i < K; i++) {
         vectorE_NTT[i] = NTT(vectorE[i]);
     }
+
     // t vector in NTT domain
     __uint16_t** vectorResult = multiplyMatrixByVector(matrixA, vectorS_NTT);
     __uint16_t** vectorT_NTT = sumVector(vectorResult, vectorE_NTT);
@@ -441,7 +447,7 @@ __uint8_t* PKE_Encrypt(__uint8_t* ekPKE, __uint8_t* m, __uint8_t* r) {
     for (int i = 0; i < K; i++) {
         for (int j = 0; j < K; j++) {
             __uint8_t* outXOF = XOF(rho, i, j); // XOF(ρ,j,i)
-            matrixAT[j*K + i] = sampleNTT(outXOF); 
+            matrixAT[i*K + j] = sampleNTT(outXOF); 
             free(outXOF);
         }
     }
@@ -646,6 +652,8 @@ __uint8_t *PKE_Decrypt(__uint8_t *dkPKE, __uint8_t *cipherText) {
     for (int i = 0; i < 256; i++) {
         w[i] = subModq(v[i], resultDot[i]);
     }
+    // printf("w : \n");
+    // printBytesHex(byteEncode(w, 12), 384);
 
     // Compressing and encoding w.
     for (int i = 0; i < 256; i++) {
@@ -667,8 +675,11 @@ struct Keys ML_KEM_KeyGen() {
     struct Keys keysML_KEM;
 
     // Random bytes 
-    __uint8_t z [32] = {0x92,0xAC,0x7D,0x1F,0x83,0xBA,0xFA,0xE6,0xEE,0x86,0xFE,0x00,0xF9,0x5D,0x81,
-                        0x33,0x75,0x77,0x24,0x34,0x86,0x0F,0x5F,0xF7,0xD5,0x4F,0xFC,0x37,0x39,0x9B,0xC4,0xCC};
+    // __uint8_t z [32] = {0xd1, 0xd4, 0x9a, 0x51, 0x52, 0x50, 0xdb, 0xce, 0xb9, 0xf6, 0xe3, 0xfc, 0xc1, 0xc7, 0xd5, // ML-KEM 768
+    //                     0x30, 0x69, 0x18, 0x96, 0x4b, 0x21, 0xdd, 0xb2, 0x22, 0x07, 0xe0, 0x3e, 0x57, 0xf0, 0x60, 0x0d, 0xa8};
+
+    __uint8_t z [32] = {0x5f, 0x57, 0x4e, 0xf7, 0xf0, 0x13, 0xd4, 0x33, 0x68, 0x01, 0xfe, 0xd0, 0x22, 0x17, 0x8c, // ML-KEM 1024
+                        0x3e, 0xd9, 0x1d, 0x0b, 0x6d, 0x51, 0x32, 0x53, 0x15, 0xfc, 0x1d, 0xca, 0xbf, 0x47, 0x70, 0xa2, 0xea};
 
     // PKE keys
     struct Keys keysPKE = PKE_KeyGen();
@@ -694,7 +705,11 @@ struct Keys ML_KEM_KeyGen() {
 __uint8_t* ML_KEM_Encaps(__uint8_t *ekML) {
 
     // Random bytes
-    __uint8_t* m = generateRandomBytes(1);
+    // __uint8_t m[32] = {0x3d, 0xc2, 0x7c, 0xa0, 0xa6, 0x59, 0x4b, 0x0e, 0x56, 0x32, 0x04, 0x57, 0xc4, 0x5a, 0x0f, 0x76, // ML-KEM 768
+    //                 0xbb, 0x8a, 0x21, 0x3e, 0xa4, 0xa7, 0x6d, 0x44, 0x21, 0x86, 0xa0, 0xae, 0xfa, 0xdb, 0xcd, 0xb9};
+
+    __uint8_t m[32] = {0xe0, 0x7d, 0x68, 0x5e, 0xd3, 0x08, 0xe6, 0x09, 0xc9, 0xc7, 0x84, 0x20, 0x26, 0xe3, 0x57, // ML-KEM 1024
+                        0x32, 0xf6, 0xff, 0xc6, 0xe2, 0xfe, 0xe1, 0x0f, 0x0a, 0xfd, 0x34, 0x8f, 0x2b, 0x42, 0xa8, 0xac, 0xb4};
 
     // Hashes generation: G(m ∥ H(ek))
     __uint8_t Hek[32];
@@ -737,9 +752,9 @@ __uint8_t *ML_KEM_Decaps(__uint8_t *cipherText, __uint8_t *dkML) {
         }else if (i < 768*K + 32){
             ekPKE[i - 384*K] = dkML[i];
         }else if (i < 768*K + 64){
-            h[i - 768*K] = dkML[i];
+            h[i - 768*K - 32] = dkML[i];
         }else {
-            z[i - 768*K - 32] = dkML[i];
+            z[i - 768*K - 64] = dkML[i];
         }
     }
     // Decryption
@@ -763,6 +778,12 @@ __uint8_t *ML_KEM_Decaps(__uint8_t *cipherText, __uint8_t *dkML) {
         Kp[i] = Kp_rp[i];
         rp[i] = Kp_rp[i + 32];
     }
+
+    printf("Kp: \n");
+    printBytesHex(Kp, 32);
+    
+    printf("K_: \n");
+    printBytesHex(K_, 32);
 
     // Encryption
     __uint8_t* cp = PKE_Encrypt(ekPKE, mp, rp); 
@@ -837,7 +858,7 @@ __uint8_t* XOF(__uint8_t* rho, __uint8_t i, __uint8_t j) {
     __uint16_t sizeInput2 = 1 + sizeInput1;
     __uint8_t* input2 = concatenateBytes(input1, &j, sizeInput1, 1);
 
-    __uint16_t sizeOut = 2*256;
+    __uint16_t sizeOut = 3*256;
     __uint8_t* output = (__uint8_t*)calloc(sizeOut, sizeof(__uint8_t));
 
     SHAKE_128(input2, sizeInput2, output, sizeOut);

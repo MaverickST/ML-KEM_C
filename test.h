@@ -11,6 +11,8 @@ void printByteArray(__uint8_t* byteArray, __uint16_t numBytes);
 void printPoly(__uint16_t* poly);
 void printBytes(__uint8_t* byteArray, __uint8_t d);
 void printBytesHex(__uint8_t* byteArray, __uint16_t d);
+void printMatrixVector(__uint16_t** matrixVector, __uint8_t k);
+
 void runTestsConvertions();
 void runTestCompress();
 void runTestsEncode();

@@ -446,10 +446,17 @@ void runTestML_KEM() {
     printBytesHex(c, 32*(D_u*K + D_v));
 
     // Decapsulation
-    __uint8_t* sharedKey_A = ML_KEM_Decaps(keysML_KEM.dk, c);
+    __uint8_t* sharedKey_A = ML_KEM_Decaps(c, keysML_KEM.dk);
 
     printf("Shared key A: \n");
     printBytesHex(sharedKey_A, 32);
+
+    // Validation
+    if (memcmp(sharedKey_A, sharedKey_B, 32) == 0) {
+        printf("Shared keys are equal!!\n");
+    } else {
+        printf("Shared keys are different!!\n");
+    }
 
     // Free memory
     free(K_c);
@@ -629,4 +636,14 @@ void printBytesHex(__uint8_t *byteArray, __uint16_t numBytes) {
         printf("%02x", byteArray[i]);
     }
     printf("\n");
+}
+
+void printMatrixVector(__uint16_t **matrixVector, __uint8_t k)
+{
+    for (int i = 0; i < k; i++) {
+        if(i%K == 0){
+            printf("\n");
+        }
+        printPoly(matrixVector[i]);
+    }
 }

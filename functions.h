@@ -3,11 +3,11 @@
 
 #define N 256
 #define Q 3329
-#define K 3
+#define K 4
 #define ETA_1 2
 #define ETA_2 2
-#define D_u 10
-#define D_v 4
+#define D_u 11
+#define D_v 5
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -347,6 +347,8 @@ __uint16_t mulModq(__uint16_t a, __uint16_t b);
  * @return __uint8_t* 
  */
 __uint8_t* generateRandomBytes(__uint8_t d);
+
+__uint16_t* mulPoly(__uint16_t *poly1, __uint16_t *poly2);
 void freeVector(__uint16_t **vector, __uint8_t sizeK);
 
 __uint8_t* copyBytesArray(__uint8_t* byteArray, __uint16_t numBytes);
